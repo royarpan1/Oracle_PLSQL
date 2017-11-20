@@ -1,0 +1,2589 @@
+---------------FIRST PART----------------------------
+
+WITH CLAUSE
+-----------
+
+To prevent writing repeated queries or to simplify complex sql statements, WITH clause is used.
+
+with rpt as (select rpt_code from vel_report_config)
+select a.rpt_code from vel_report_rights a,rpt b
+where a.rpt_code=b.rpt_code;
+
+with rpt_cnt as (select /*+INLINE*/ username,count(1) from vel_report_rights group by username)
+select * from vel_user a,rpt_cnt b
+where a.username = b.username;
+
+MATERIALIZE hint - it will create a separate temp teble
+INLINE - It will resolve inline.
+
+Generate random number
+----------------------
+select rownum from dual connect by rownum<=10; - generate numbers 1 to 10.
+
+select dbms_random.random from dual; - returns one random number. only numbers +ve or -ve
+
+select dbms_random.value(0,1) from dual;
+
+select dbms_random.string('A', 20) str from dual; 20 is length of string
+select dbms_random.string('L', 20) str from dual;
+select dbms_random.string('U', 20) str from dual;
+X - alphanumeric
+
+
+EXTRACT
+-------
+Select extract(day from sys_creation_date) from cm_subscriber_mp.
+day,month,year,hour,minute,second
+
+INTERVAL
+--------
+select SYS_CREATION_DATE+TO_YMINTERVAL('01-05') FROM CM_SUBSCRIBER_MP; - adds 1 year and 5 months to orig date
+select SYS_CREATION_DATE+TO_DSINTERVAL('10 01:00:00') FROM CM_SUBSCRIBER_MP; - adds 10 days and 1 hour to orig date
+
+
+DEFAULT
+-------
+CREATE TABLE TEMP_11 (NAME VARCHAR2(1000) DEFAULT 'NAME',ADD1 VARCHAR2(100));
+INSERT INTO TEMP_11 VALUES(DEFAULT,'ACCC');
+INSERT INTO TEMP_11(ADD1) VALUES('ACCC1');
+CREATE TABLE TEMP_11 (NAME VARCHAR2(1000) DEFAULT 'NAME' ON NULL 'NAME1',ADD1 VARCHAR2(100)); - 12C feature
+
+INSERT ALL
+----------
+INSERT ALL
+  INTO T1 VALUES('A',12)
+  INTO T2(NAME,ADD1) VALUES('B',13)
+  INTO T3 VALUES('C',14)
+SELECT * FROM DUAL; 
+
+
+
+DECLARE 
+SAL NUMBER := 100;
+
+BEGIN
+INSERT ALL
+WHEN (SAL<1000) THEN 
+  INTO T1 VALUES('B',12)
+WHEN (SAL<2000 AND SAL>1500) THEN 
+  INTO T2 VALUES('B',12)
+WHEN (SAL<500) THEN
+  INTO T3 VALUES('C',13)
+select * from dual;
+END;   
+
+It will check all the conditions and insert only where it matches.
+
+DECLARE 
+SAL NUMBER := 100;
+
+BEGIN
+  
+INSERT ALL
+WHEN (SAL<1000) THEN 
+  INTO T1 VALUES(rpt_code,vdays)
+WHEN (SAL>2000) THEN 
+  INTO T2 VALUES('B',12)
+WHEN (SAL<500) THEN
+  INTO T3 VALUES('C',13)
+select * from vel_report_config;
+END;  
+
+INSERT ALL
+WHEN (vdays<1) THEN 
+  INTO T1 VALUES(rpt_code,vdays)
+WHEN (vdays>2000) THEN 
+  INTO T2 VALUES('B',12)
+WHEN (vdays<500) THEN
+  INTO T3 VALUES('C',13)
+select * from vel_report_config;
+
+INSERT ALL
+WHEN (vdays<1) THEN 
+  INTO T1 VALUES(rpt_code,vdays)
+WHEN (vdays>2000) THEN 
+  INTO T2 VALUES('B',12)
+WHEN (vdays<500) THEN
+  INTO T3 VALUES('C',13)
+else 
+  into t4 values('d',4)  
+select * from vel_report_config;
+
+INSERT FIRST
+------------
+It can be used only with conditional insert
+
+INSERT FIRST
+WHEN (sal >= 3000) THEN
+INTO top_earners (emp_id, emp_name, emp_sal) VALUES (empno, ename, sal)
+WHEN (sal >= 1500) THEN
+INTO mid_earners (emp_id, emp_name, emp_sal) VALUES (empno, ename, sal)
+WHEN (sal > 0 ) THEN
+INTO low_earners (emp_id, emp_name, emp_sal) VALUES (empno, ename, sal)
+SELECT * FROM emp;
+
+When any one condition is true then it stops inserting.
+
+MERGE
+-----
+Delete, insert and update in the same command.
+
+MERGE INTO employees e
+    USING hr_records h
+    ON (e.id = h.emp_id)
+  WHEN MATCHED THEN
+    UPDATE SET e.address = h.address
+  WHEN NOT MATCHED THEN
+    INSERT (id, address)
+    VALUES (h.emp_id, h.address);
+
+MERGE INTO employees e
+    USING (SELECT * FROM hr_records WHERE start_date > ADD_MONTHS(SYSDATE, -1)) h
+    ON (e.id = h.emp_id)
+  WHEN MATCHED THEN
+    UPDATE SET e.address = h.address
+  WHEN NOT MATCHED THEN
+    INSERT (id, address)
+    VALUES (h.emp_id, h.address);
+
+merge into student a
+using
+(select id, name, score  from student_n) b
+on (a.id = b.id)
+when matched then
+update set a.name = b.name, a.score = b.score
+when not matched then
+insert (a.id, a.name, a.score)
+values (b.id, b.name, b.score);
+
+
+PRIVILEGES
+----------
+Object privileges are those that can be granted to modify an object like table. System privilege is used to create alter or delete objects in the schema.
+
+
+Object privileges : ALTER,DELETE,EXECUTE,INDEX,INSERT,REFERENCES,SELECT,UPDATE
+System privileges : Create table, proc, function
+
+Object Privileges
+----------------
+
+grant select, update, insert on emp to sami;
+grant  all on emp to sami;
+grant update (ename),insert (empno, ename)  on emp to sami;
+grant select on emp to sami with grant option;
+
+revoke update, insert on emp from sami;
+COLUMN LEVEL privileges can't be revoked.
+
+System Privileges
+-----------------
+
+CREATE TABLE - Only in own schema
+CREATE ANY TABLE - in any schema
+
+CREATE PROCEDURE
+CREATE ANY PROCEDURE
+
+grant create any table to schema1;
+with admin option - to allow him to give rights to other users.
+
+SELECT * FROM USER_SYS_PRIVS;
+
+ROLES
+-----
+A role is a group of privileges. A role is very handy in managing privileges, particularly in such situation when number of users should have the same set of privileges like clerks, managers.
+
+create role clerks
+grant select,update on emp to clerks;
+grant clerks to sami, scott, ashi, tanya ;
+revoke update on emp from clerks;
+
+SELECT * FROM USER_TAB_PRIVS_MADE; - only table name and not col name
+SELECT * FROM USER_TAB_PRIVS_RECD;
+SELECT * FROM USER_ROLE_PRIVS; - what all roles created. no table names.
+SELECT * FROM role_tab_privs; - which role has what privileges.
+
+DATA DICTIONARY
+---------------
+user
+all
+dba
+v$
+
+SELECT * FROM dictionary ;
+
+SELECT * FROM user_objects; - created, last DDL time
+SELECT * FROM user_tables; - pctfree,pctused
+SELECT * FROM user_constraints;(search_condition col is the constraint),table_name,constraint_name
+SELECT * FROM user_cons_columns; - need to join with user_constraints for the constraint- table_name,constraint_name,caller_name
+SELECT * FROM user_views;
+SELECT * FROM user_sequences;
+SELECT * FROM all_synonyms; - owner, synonynm_name,table_owner,table_name
+SELECT * FROM user_segments;- bytes is size and segment name is table name.
+SELECT * FROM all_tab_cols;
+SELECT * FROM all_tab_partitions;
+SELECT * FROM user_segments; - for table size
+SELECT * FROM all_col_comments;
+SELECT * FROM ALL_TAB_COMMENTS;
+
+
+SELECT * FROM USER_SYS_PRIVS; - The system privileges available at present.
+SELECT * FROM USER_TAB_PRIVS; - The tables to which MIS_MP has given privilege or some other schema granted to MIS_MP. with grantable option and what all privileges given.
+SELECT * FROM USER_ROLE_PRIVS;
+
+Size of tables - User_segments,bytes/1024^3
+
+SELECT * FROM V$SESSION;
+SELECT * FROM V$SQL;
+
+V$SESSION - It contains the session information like SID,logon time, machine, status,SQL_ID,username
+V$SQL - It contains the sql text. 
+Joined based on SQL_ID.
+
+v$session_longops - It contains data on the running queries like sofar,totalwork,start_time,last_update_time,time remaining,elasped seconds,
+
+V$ VIEWS - Views created on dynamic performance tables.
+
+cardinality is no. of rows.
+bytes is size of data.
+
+table size is taken from segment_size in user_segments. actual table size is taken from user_tables - no.of rows * avg length of rows.
+The figures in user_tables are improved by compute statistics.
+
+SELECT * FROM user_users; - You can see the default tablespace and temporary tablespace.
+
+TYPES OF SQL COMMANDS
+---------------------
+DDL,DML,DCL,TCL,DQL
+
+
+TCL - COMMIT,ROLLBACK
+
+If 2 transactions are done and then rollback then both will be reversed.rollback to savepoint A means after A the statements will be skipped. 
+then commit has to be done for the statements before A.
+
+if after 2 dml commit is done then both are committed.
+
+insert into test2 VALUES
+('E',10,10,NULL);
+
+SAVEPOINT MY_SVPT;
+
+update test2 set marks2=50
+where marks1 = 10
+
+ROLLBACK TO MY_SVPT;
+COMMIT;
+
+
+DDL - CREATE,ALTER,DROP,TRUNCATE,RENAME,COMMENT
+
+CREATE TABLE TEMP_1(NAME VARCHAR2(100),PHN NUMBER);
+
+ALTER TABLE vrc3 add(rpt varchar2(100));
+ALTER TABLE VRC3 MODIFY (RPT VARCHAR2(100));
+ALTER TABLE VRC3 DROP COLUMN RPT;
+ALTER TABLE VRC3 ADD PRIMARY KEY(RPT_CODE);
+ALTER TABLE VRC3 DROP CONSTRAINT CK;
+ALTER TABLE TEST2 DROP PRIMARY KEY;
+
+ALTER TABLE ENABLE CONSTRAINT CK;
+ALTER TABLE DISABLE CONSTRAINT CK;
+
+rename vrc2 to vrc3;
+
+table comments and column comments
+
+SELECT * FROM all_col_comments WHERE TABLE_NAME LIKE 'VRC3';
+
+COMMENT ON COLUMN vrc3.rpt_code
+   IS 'report code';
+
+COMMENT ON table vrc3   IS 'report code';
+
+
+DML - SELECT,INSERT,UPDATE,DELETE,MERGE
+
+Update 2 columns in  a single query
+update tab1 set name = (select name from dept),add=(select add_1 from dept);
+
+SUBQUERY
+--------
+Correlated and scalar subqueries
+
+Corelated subquery means subquery can't be run without outer query.
+For each row of the outer query, the inner query gets executed.
+
+CO-RELATED SUBQUERY
+UPDATE UPSS_MIS_PROCESS_LOG X SET X.STATUS = 'SUCCESS' AND X.END_DATE_TIME = SYSDATE
+WHERE X.PROCESS_NAME='MIS_SUBS_7DAY_MAST' AND X.START_DATE_TIME = (SELECT MAX(Y.START_DATE_TIME)FROM 
+UPSS_MIS_PROCESS_LOG Y WHERE X.PROCESS_NAME = Y.PROCESS_NAME));
+
+
+INLINE VIEW
+------------
+In the from clause, a query can be written instead of a table name.
+
+SELECT * 
+FROM temp_1 A,(SELECT RPT_CODE,RPT_NAME FROM VEL_REPORT_CONFIG B)
+WHERE A.RPT_CODE = B.RTP_CODE
+
+LATERAL INLINE VIEW
+-------------------
+A LATERAL inline view allows you to reference the table on the left of the inline view definition in the FROM clause, allowing the inline view to be correlated.
+SELECT * FROM EMP A,LATERAL (SELECT DEPT FROM DEPT_TABLE B WHERE A.DEPT_ID = B.DEPT_ID);
+
+SET OPERATORS
+-------------
+UNION,UNION ALL,MINUS,INTERSECT
+
+Union will display column names from first query.
+Order by should come at the end of last query in union.
+
+SEQUENCE
+--------
+CREATE SEQUENCE SEQ1
+START WITH 1
+INCREMENT BY 10
+MAXVALUE 9999
+NOCYCLE
+NOCACHE;
+
+CACHE 10 - keep 10 numbers in cache to get the value faster.
+
+CYCLE 
+Specify CYCLE to indicate that the sequence continues to generate values after reaching either its maximum or minimum value. After an ascending sequence reaches its maximum value, it generates its minimum value. After a descending sequence reaches its minimum, it generates its maximum value.
+
+UPDATE Orders_tab
+SET Orderno = Order_seq.NEXTVAL
+WHERE Orderno = 10112;
+
+select se1.currval from dual;
+select se1.nextval from dual;
+
+nextval has to be run to get currval.
+
+SYNONYMS
+--------
+If the original table name keeps changing but report code needs to be kept fixed then synonyms are used. Synonyms pointing can be changed when the original table name gets changed.
+Public synonym and private synonym - 
+
+
+create synonym CDR for CDR_ADMIN.MED_UNIFIED_CDR_C15_OCT_2016@TO_UPSS_CDR.WORLD;
+create public synonym syn2 for vel_report_config_2OCT;
+drop public synonym syn2;
+
+VIEWS
+-----
+Simple view - It has a single query.
+Complex view - It uses join of some tables.
+
+CREATE VIEW EMP_VU AS
+SELECT A.CNT FROM TEST1 A,TEST2 B
+WHERE A.CNO = B.CNO;
+
+UPDATE EMP_VU SET CNT=10;
+
+If a table used in a view is dropped then the view still remains ok. But it gives error on querying. View vu_1 has errors. When table is recreated then view becomes ok.
+
+
+CREATE VIEW sales_staff AS
+      SELECT empno, ename, deptno
+      FROM emp
+      WHERE deptno = 10
+    WITH CHECK OPTION;
+
+It will check whether the updated row will be selected in the view.
+
+CREATE VIEW sales_staff AS
+      SELECT empno, ename, deptno
+      FROM emp
+      WHERE deptno = 10
+    WITH READ ONLY;
+
+1. A Simple view selects from one table. A Complex view selects from one or more tables.
+2. A Simple view does not contain functions but Complex views contain functions.
+3. You can perform DML through Simple views but you cannot always perform DML through Complex views.
+
+JOINS
+-----
+EQUI / NONEQUI JOIN
+OUTER / INNER JOIN
+SELF / CROSS JOIN
+NATURAL JOIN
+
+NATURAL JOIN
+------------
+
+SELECT * FROM VEL_USER NATURAL JOIN VEL_REPORT_RIGHTS;
+
+INNER JOIN
+----------
+
+SELECT * FROM CM_SUBSCRIBER_MP A,TEMP_MSISDN B
+WHERE A.MSISDN = B.MSISDN;
+
+SELECT * FROM CM_SUBSCRIBER_MP A JOIN TEMP_MSISDN B
+ON (A.MSISDN = B.MSISDN);
+
+SELECT * FROM CM_SUBSCRIBER_MP A INNER JOIN TEMP_MSISDN B
+ON (A.MSISDN = B.MSISDN);
+
+OUTER JOIN
+----------
+
+SELECT * FROM CM_SUBSCRIBER_MP A,TEMP_MSISDN B
+WHERE A.MSISDN(+) = B.MSISDN
+
+SELECT * FROM CM_SUBSCRIBER_MP A FULL OUTER JOIN TEMP_MSISDN B
+ON (A.MSISDN = B.MSISDN);
+
+
+CROSS JOIN / CARTESIAN PRODUCT
+------------------------------
+SELECT * FROM CM_SUBSCRIBER_MP A,TEMP_MSISDN B;
+
+
+EQUIJOIN / NONEQUIJOIN
+----------------------
+START_BATCH_NO AND END_BATCH_NO
+
+SELECT * FROM PROMO_SUBSCRIBER_MAP A,TEMP_PROMOS B WHERE A.PROMO_ID BETWEEN B.START_BATCH_NO AND B.END_BATCH_NO;
+
+SELF JOIN
+---------
+SELECT A.EMP_NAME,B.EMP_NAME MGR_NAME
+FROM EMPLOYEE A,EMPLOYEE B
+WHERE A.MGR_ID = B.EMP_ID;
+
+CROSS APPLY
+-----------
+SELECT * FROM EMP A,CROSS APPLY (SELECT DEPT FROM DEPT_TABLE B WHERE A.DEPT_ID = B.DEPT_ID);
+It is cartesian product with correlated query. It is same as cross join but condition is along with second table.
+
+
+OUTER_APPLY
+-----------
+It is same as left outer join but condition is with second table.
+SELECT * FROM EMP A,OUTER APPLY (SELECT DEPT FROM DEPT_TABLE B WHERE A.DEPT_ID = B.DEPT_ID);
+
+
+SUBSTITUTION VARIABLE
+---------------------
+SELECT * FROM VEL_REPORT_CONFIG WHERE RPT_CODE = '&VAR';
+INSERT INTO TEST2(NAME) VALUES('&C');
+
+
+---------------SECOND PART----------------------------
+
+SQL ROW LIMITING CLAUSE
+-----------------------
+SELECT val
+FROM   rownum_order_test
+ORDER BY val DESC
+FETCH FIRST 5 ROWS ONLY;
+
+SELECT val
+FROM   rownum_order_test
+ORDER BY val DESC
+FETCH FIRST 5 ROWS WITH TIES;
+
+SELECT val
+FROM   rownum_order_test
+ORDER BY val
+FETCH FIRST 20 PERCENT ROWS ONLY;
+
+SELECT val
+FROM   rownum_order_test
+ORDER BY val
+OFFSET 4 ROWS FETCH NEXT 20 PERCENT ROWS ONLY;
+
+SELECT val
+FROM   rownum_order_test
+ORDER BY val
+OFFSET 4 ROWS FETCH NEXT 20 ROWS ONLY;
+
+
+TYPES OF FUNCTIONS IN ORACLE
+----------------------------
+SINGLE ROW FUNCTION
+
+NUMERIC FUNCTION - ROUND,CEIL,TRUNC
+STRING FUNCTION - UPPER,LOWER,LENGTH,SUBSTR,INSTR
+DATE FUNCTION - LAST_DAY,NEXT_DAY,MONTHS_BETWEEN,EXTRACT,TO_YMINTERVAL,TO_DSINTERVAL,ADD_MONTHS
+CONVERSION FUNCTION - TO_CHAR,TO_DATE,TO_NUMBER
+
+SELECT LAST_DAY('12-sep-2016') FROM DUAL; - 30TH SEP IS RESULT
+SELECT NEXT_DAY('12-sep-2016','MON') FROM DUAL;
+
+SELECT TRIM('H' FROM 'HELLO WORHDH') FROM DUAL; - ONLY FROM THE 2 ENDS. NOT MIDDLE ONES
+
+SELECT INSTR('HELLO','A') FROM DUAL; - RETURN 0
+SELECT TO_CHAR(HIRE_DATE,'DD/MM/YYYY') FROM TEST2;
+SELECT TO_CHAR(MARKS,'$9,99,999') FROM TEST2;
+
+UPDATE TEST2
+SET HIRE_DATE=TO_DATE('01-APR-49 10:00:50','DD-MON-YY HH24:MI:SS');
+
+NVL(BALANCE,0) - Returns 0 if balance is null
+NVL2(BAL,BAL1,BAL2) - Returns BAL1 if BAL not null. Returns BAL2 is BAL is null
+NULLIF RETURNS NULL IF EQUAL OTHERWISE FIRST EXPR
+COALESCE RETURNS FIRST NON-NULL EXPRESSION
+
+IF TYPE IS DATE then --- CHURN_DATE > TO_DATE('01-APR-2016','DD-MON-YYYY');
+IF TYPE IS VARCHAR2(100) then ----  WHERE TO_DATE(CHURN_DATE,'YYYYYMMDD') > TO_DATE('01-APR-2016','DD-MON-YYYY')
+
+SELECT TO_CHAR(CHURN_DATE,'YYYY') FROM CM_SUBSCRIBER_ROB;
+
+select trunc(sysdate,'Q') from dual;
+select last_day(add_months(trunc(sysdate,'Q'),3)) from dual;
+
+alter table test_11 rename to test_12;
+rename test11 to test12;
+alter table test_11 rename column age1 to name;
+
+Swapping the columns
+update test_11 set name = age,age=name;
+a=a+b;
+b=a-b;
+a=a-b;
+
+
+SELECT NAME,MARKS1,CASE MARKS2
+WHEN 10 THEN 'A'
+WHEN 20 THEN 'B'  
+WHEN 30 THEN 'C'  
+ELSE 'D'
+END "GRADE",MARKS2 FROM TEST2;
+
+SELECT COUNT(MARKS1) FROM TEST2; NON NULL VALUES OF MARKS1
+
+PRECEDENCE : NOT,AND,OR
+
+SELECT rpt_code "rpt" FROM vrc2;
+SELECT rpt_code||' '||rpt_name FROM vrc2;
+
+EXTRACT
+-------
+Select extract(day from sys_creation_date) from cm_subscriber_mp.
+day,month,year,hour,minute,second
+
+
+INTERVAL
+--------
+select SYS_CREATION_DATE+TO_YMINTERVAL('01-05') FROM CM_SUBSCRIBER_MP; - adds 1 year and 5 months to orig date
+select SYS_CREATION_DATE+TO_DSINTERVAL('10 01:00:00') FROM CM_SUBSCRIBER_MP; - adds 10 days and 1 hour to orig date
+
+MULTIPLE ROWS
+AGGREGATE FUNCTIONS
+ANALYTIC FUNCTIONS
+
+EXISTS / NOT EXISTS
+-------------------
+UPDATE report.TEST target
+SET    is Deleted = 'Y'
+WHERE  NOT EXISTS (SELECT 1
+FROM   main.TEST source
+WHERE  source.ID = target.ID);
+
+DATABASE OBJECTS
+----------------
+SCHEMA OBJECTS
+--------------
+TABLE
+INDEX
+VIEW
+SEQUENCE
+SYNONYMS
+
+NON-SCHEMA OBJECTS
+------------------
+USERS
+TABLESPACES
+ROLES
+
+
+DATATYPES IN ORACLE
+-------------------
+VARCHAR
+VARCHAR2
+CHAR
+NUMBER
+DATE
+TIMESTAMP
+LOB
+ROWID
+
+
+CONSTRAINTS
+-----------
+column level constraint
+table level constraint
+
+UNIQUE 
+NOT NULL
+PRIMARY KEY
+FOREIGN KEY
+CHECK
+
+Every constraint can be both table or column level. But not null is only column level. Check start<end is table level.
+
+Anything that can be written in where clause can be written in a check constraint
+If constraint is not given then SYS_Cn name is given.
+3 ways to define a constraint
+
+check constraint sys_c111) violated
+
+foreign key - on delete cascade / on delete set null
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER PRIMARY KEY, NAME VARCHAR2(1000) NOT NULL,IMSI NUMBER UNIQUE,AGE NUMBER CHECK (age > 5.0),
+dept_id references departments(dept_id));
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER,NAME VARCHAR2(1000),
+CONSTRAINT pk PRIMARY KEY (account_id));
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER,NAME VARCHAR2(1000),
+CONSTRAINT un UNIQUE (account_id));
+
+ALTER TABLE table_name
+ADD CONSTRAINT CN_1 PRIMARY KEY (ACCOUNT_ID); - IN ALTER statement the name of constraint is compulsory.
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER, NAME VARCHAR2(1000),IMSI NUMBER,AGE NUMBER,n varchar2(100),primary key(account_id));
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER, NAME VARCHAR2(1000),AGE NUMBER,n varchar2(100),primary key(account_id),foreign key (msisdn) references department(dept));
+
+CREATE TABLE TEMP_11(ACCOUNT_ID NUMBER, NAME VARCHAR2(1000),IMSI NUMBER,AGE NUMBER,constraint c1_pk primary key (account_id));
+
+ALTER TABLE supplier DROP CONSTRAINT supplier_pk;
+
+ALTER TABLE table_name DISABLE CONSTRAINT constraint_name;
+
+
+TRUNCATE
+--------
+TRUNCATE removes all rows from a table. The operation cannot be rolled back and no triggers will be fired. As such, TRUCATE is faster and doesn't use as much undo space as a DELETE.
+
+1>TRUNCATE is a DDL command whereas DELETE is a DML command.
+
+2>TRUNCATE is much faster than DELETE.
+
+When you type DELETE.all the data get copied into the Rollback Tablespace first.then delete operation get performed.Thats why when you type ROLLBACK after deleting a table ,you can get back the data(The system get it for you from the Rollback Tablespace).All this process take time.But when you type TRUNCATE,it removes data directly without copying it into the Rollback Tablespace.Thatswhy TRUNCATE is faster.Once you Truncate you cann't get back the data.
+
+3>You can't rollback in TRUNCATE but in DELETE you can rollback.TRUNCATE removes the record permanently.
+
+4>In case of TRUNCATE ,Trigger doesn't get fired.But in DML commands like DELETE .Trigger get fired.
+
+5>You can't use conditions(WHERE clause) in TRUNCATE.But in DELETE you can write conditions using WHERE clause.
+
+6>TRUNCATE command resets the High Water Mark for the table but DELETE does not. So after TRUNCATE the operations on table are much faster.
+
+Truncate table CASCADE
+In the previous releases, there wasn’t a direct option provided to truncate a master table while it is referred to by the child tables and child records exist. The TRUNCATE TABLE with CASCADE option in 12c truncates the records in the master table and automatically initiates recursive truncate on child tables too, subject to foreign key reference as DELETE ON CASCADE. There is no CAP on the number of recursive levels as it will apply on all child, grand child and great grandchild etc.
+
+This enhancement gets rid of the prerequisite to truncate all child records before truncating a master table. The new CASCADE clause can also be applied on table partitions and sub-partitions etc.
+
+TRUNCATE TABLE <table_name> CASCADE;
+
+
+INVISIBLE COLUMN
+----------------
+
+CREATE TABLE tab1 (
+  id          NUMBER,
+  description VARCHAR2(50) INVISIBLE
+);
+
+INSERT INTO tab1 VALUES (1);
+
+INSERT INTO tab1 (id, description) VALUES (2, 'TWO');
+
+SELECT id, description
+FROM   tab1;
+
+SELECT column_id,
+       column_name,
+       hidden_column
+FROM   user_tab_cols
+WHERE  table_name = 'TAB1'
+ORDER BY column_id;
+
+ COLUMN_ID COLUMN_NAME	   HID
+---------- --------------- ---
+	 1 A		   NO
+	 2 B		   NO
+	   C		   YES
+
+ALTER TABLE tab1 MODIFY b INVISIBLE;
+ALTER TABLE tab1 MODIFY c VISIBLE;
+
+IDENTITY COLUMNS
+----------------
+It is similar to sequence but it has better performance.
+
+CREATE TABLE identity_test_tab (
+  id          NUMBER GENERATED ALWAYS AS IDENTITY(START WITH 1, INCREMENT BY 1),
+  description VARCHAR2(30)
+);
+
+INSERT INTO identity_test_tab (description) VALUES ('Just DESCRIPTION');
+
+You can't insert in a column always as identity.
+
+CREATE TABLE identity_test_tab (
+  id          NUMBER GENERATED BY DEFAULT AS IDENTITY,
+  description VARCHAR2(30)
+);
+
+You can insert in a column default as identity.
+
+It will show in IS_IDENTITY column of user_tab_cols.
+
+VIRTUAL COLUMNS
+---------------
+These contain derived values
+
+CREATE TABLE employees (
+  id          NUMBER,
+  first_name  VARCHAR2(10),
+  last_name   VARCHAR2(10),
+  salary      NUMBER(9,2),
+  comm1       NUMBER(3),
+  comm2       NUMBER(3),
+  salary1     AS (ROUND(salary*(1+comm1/100),2)),
+  salary2     NUMBER GENERATED ALWAYS AS (ROUND(salary*(1+comm2/100),2)) VIRTUAL,
+  CONSTRAINT employees_pk PRIMARY KEY (id)
+);
+all_tab_identity_columns
+
+select * will show the virtual column.
+
+In user_tab_cols it will show in data default
+COLUMN_NAME                    DATA_DEFAULT
+------------------------------ --------------------------------------------------
+ID
+FIRST_NAME
+LAST_NAME
+
+SALARY
+COMM1
+COMM2
+SALARY1                        ROUND("SALARY"*(1+"COMM1"/100),2)
+SALARY2                        ROUND("SALARY"*(1+"COMM2"/100),2)
+
+---------------THIRD PART---------------------------------------------------------------------------------------------------------------------------------
+
+HINTS
+------
+
+Hint is an instruction to the optimizer to choose a different plan for a sql statement. The optimizer uses the hints to choose an execution plan.
+
+If statistics are not gathered properly then the optimizer might choose a plan that is not optimal. In such cases hints can be used to choose a better plan.
+
+In a test or dev environment hints are useful to check the performance of a a specific execution plan.
+
+Hints should be used as a last resort.
+
+
+Important hints
+----------------
+1. ALL_ROWS - Cost based approach for best throughput. It is default.
+2. FIRST_ROWS - Cost based approach for best response time
+3. FULL - Force to do FTS. If more than 10% of the table rows are returned then FTS will be faster.
+4. NO_INDEX
+5. PARALLEL
+6. NO_PARALLEL
+7. APPEND
+8. APPEND_VALUES - to use values clause.
+9. CACHE - It will keep the data at the most recently used end of LRU in buffer cache
+10.RESULT_CACHE - 
+11.DRIVING_SITE - 
+12.ORDERED - 
+13.LEADING - 
+
+The driving_site hint forces query execution to be done at a different site than the initiating instance. This is done when the remote table is much larger than the local table and you want the work (join, sorting) done remotely to save the back-and-forth network traffic
+
+The nologging option is a great way to speed-up inserts and index creation.  It bypasses the writing of the redo log, significantly improving performance.   
+Backup before and after - You must take a backup, both before and after all nologging operations
+
+Append won't search for empty space, it will directly insert new rows at the end. It will use fresh data blocks and raise the HWM.
+
+To make use of nologging then the table should be nologging and append mode should be used for insert.
+
+Load as select in explain plan means direct path insert.
+Load table conventional means conventional path insert.
+
+
+ROWNUM
+------
+
+ROWNUM is a pseudocolumn that assigns a number to every row returned by a SQL query. It can be of great use in filtering data based on the number of rows returned by the query.
+
+ROWNUM gets its value as the query is executed, not before, and gets incremented only after the query passes the WHERE clause. Therefore, your WHERE condition can filter data based on "rownum < 2/3/4/." but not "rownum > 2/3/4.". The second filter will invariably return no rows selected.
+
+
+SCHEMA / USER
+-------------
+
+Oracle schema = Oracle user + database objects owned by that user.
+
+
+DUAL
+----
+You can also select from any other table using rownum.
+select 10+5 from emp where rownum < 2;
+But oracle CBO generates optimized plan when using dual;
+
+
+HOW TO DISPLAY AS COMMA-SEPARATED LIST - 11G ONWARDS                 (CHECK)
+---------------------------------------------------
+
+DEPARTMENT_ID EMPLOYEES
+------------- ---------------------------------------
+           10 200
+           20 201,202
+           30 114,115,116,117,118,119
+           40 203
+           50 120,121,122,123,124,125,126,127,128,129
+
+SELECT DEPT_ID,LISTAGG(EMP_ID,',')
+WITHIN GROUP (ORDER BY EMP_ID) AS EMPLOYEES
+FROM EMP_1
+GROUP BY DEPT_ID;
+
+
+1. ORDER BY ASC places NULL values at the end of the query results. ORDER BY DESC places null values at the start of the query results.
+
+2. NULLS FIRST AND NULLS LAST CAN BE USED TO OVERRIDE THE DEFAULT ORDER.
+
+3. COALESCE is faster than NVL. Because NVL computes each expression whether it is null or not. COALESCE uses short-circuit evaluation. NVL2 evaluates both the expressions while coalesce just returns the first non-null expression. In coalesce all the arguments have to be of same datatype.
+
+
+HIERARCHICAL QUERY
+------------------
+Hierarchical query is a type of SQL query that is commonly leveraged to produce meaningful results from hierarchical data.
+
+Employee hierarchy (employee-manager relationship)
+Organizational hierarchy
+Graph of links between web pages
+
+LEVEL : The position in the hierarchy of the current row in relation to the root node.
+CONNECT_BY_ROOT : Returns the root node(s) associated with the current row.
+SYS_CONNECT_BY_PATH : Returns a delimited breadcrumb from root to the current row.
+CONNECT_BY_ISLEAF : Indicates if the current row is a leaf node.
+ORDER SIBLINGS BY : Applies an order to siblings, without altering the basic hierarchical structure of the data returned by the query.
+
+select id,parent_id,level,connect_by_root id root_id,connect_by_isleaf leaf,
+ltrim(sys_connect_by_path(id,'-'),'-') path
+from tab1
+start with parent_id is null
+connect by prior id = parent_id
+order siblings by id;
+
+PIVOT
+-----
+
+CREATE TABLE pivot_test (
+  id            NUMBER,
+  customer_id   NUMBER,
+  product_code  VARCHAR2(5),
+  quantity      NUMBER
+);
+
+
+SELECT * FROM 
+(SELECT CUSTOMER_ID,PRODUCT_CODE,QUANTITY FROM PIVOT_TEST)
+PIVOT
+(SUM(QUANTITY) FOR (PRODUCT_CODE) IN ('A','B','C'))
+ORDER BY CUSTOMER_ID;
+
+SELECT * FROM 
+(SELECT CUSTOMER_ID,PRODUCT_CODE FROM PIVOT_TEST)
+PIVOT
+(COUNT(PRODUCT_CODE) FOR PRODUCT_CODE IN ('A','B','C'));
+
+1.
+SELECT * FROM (SELECT CUSTOMER_ID,PRODUCT_CODE,QUANTITY FROM PIVOT_TEST)
+PIVOT (SUM(QUANTITY) AS SUM_QUANTITY FOR (PRODUCT_CODE) IN ('A', 'B','C' AS CARROT))
+ORDER BY CUSTOMER_ID;
+
+2.
+SELECT customer_id,
+       SUM(DECODE(product_code, 'A', quantity, 0)) AS a_sum_quantity,
+       SUM(DECODE(product_code, 'B', quantity, 0)) AS b_sum_quantity,
+       SUM(DECODE(product_code, 'C', quantity, 0)) AS c_sum_quantity
+FROM   pivot_test
+GROUP BY customer_id
+ORDER BY customer_id;
+
+CUSTOMER_ID will appear and pivot will be done for each cust_id.
+
+
+UNPIVOT
+-------
+CREATE TABLE unpivot_test (
+  id              NUMBER,
+  customer_id     NUMBER,
+  product_code_a  NUMBER,
+  product_code_b  NUMBER,
+  product_code_c  NUMBER,
+  product_code_d  NUMBER
+);
+
+1.
+SELECT *  FROM unpivot_test UNPIVOT(quantity FOR product_code IN(product_code_a AS 'A',
+                                                         product_code_b AS 'B',
+                                                         product_code_c AS 'C',
+                                                         product_code_d AS 'D'));
+2.
+SELECT *
+FROM   unpivot_test
+UNPIVOT INCLUDE NULLS (quantity FOR product_code IN (product_code_a AS 'A', product_code_b AS 'B', product_code_c AS 'C', product_code_d AS 'D'));
+
+SELECT id,
+       customer_id,
+       DECODE(unpivot_row, 1, 'A',
+                           2, 'B',
+                           3, 'C',
+                           4, 'D',
+                           'N/A') AS product_code,
+       DECODE(unpivot_row, 1, product_code_a,
+                           2, product_code_b,
+                           3, product_code_c,
+                           4, product_code_d,
+                           'N/A') AS quantity
+FROM   unpivot_test,
+       (SELECT LEVEL AS unpivot_row FROM dual CONNECT BY level <= 4)
+ORDER BY 1,2,3;
+
+
+FOR UPDATE
+----------
+
+select A.*,A.ROWID FROM VRC1 A;
+
+
+DYNAMIC LIKE
+------------
+BEGIN
+FOR I IN (SELECT IMSI FROM temp_imsi) LOOP
+UPDATE temp_imsi A SET CNT =
+( SELECT /*+PARALLEL(8)*/  COUNT(1) FROM cm_subscriber_jnk B where B.sub_status='A'
+ and B.SUB_STATUS like '%'||I.IMSI||'%')
+ WHERE A.IMSI = I.IMSI;
+ COMMIT;
+END LOOP;
+END;
+
+SINGLE QUOTE IN ORACLE
+----------------------
+
+select ‘it”s a rainy day’ as trivial from dual;
+
+SELECT q'[It's a rainy day] as triv from dual;
+
+select 'it'||chr(39)||'s a rainy day' from dual;
+
+
+SET UNUSED
+----------
+ALTER TABLE table_name SET UNUSED (column_name);
+ALTER TABLE table_name SET UNUSED (column_name1, column_name2);
+ALTER TABLE table_name DROP UNUSED COLUMNS;
+
+SELECT * FROM USER_UNUSED_COL_TABS;
+
+
+SQLCODE
+	-------
+If SQLCODE = 0, execution was successful.
+If SQLCODE = +1 , then user defined exception
+If SQLCODE < 0, execution was not successful.
+SQLCODE = 100, "no data" was found. For example, a FETCH statement returned no data because the cursor was positioned after the last row of the result table.
+
+DML ERROR LOGGING
+-----------------
+It will allow the dml operation to proceed even if there is excepton in any row.
+
+BEGIN
+DBMS_ERRLOG.CREATE_ERROR_LOG('DEST');
+END;
+
+INSERT INTO DEST
+SELECT * FROM USER_SOURCE
+LOG ERRORS INTO ERR$_DEST('INSERT') REJECT LIMIT UNLIMITED;
+COMMIT;
+
+Limit can be any number.
+
+ORA_ERR_NUMBER$                            NUMBER
+ ORA_ERR_MESG$                              VARCHAR2(2000)
+ ORA_ERR_ROWID$                             ROWID
+ ORA_ERR_OPTYP$                             VARCHAR2(2)
+ ORA_ERR_TAG$                               VARCHAR2(2000)
+ ID                                         VARCHAR2(4000)
+ CODE                                       VARCHAR2(4000)
+ DESCRIPTION                                VARCHAR2(4000)
+
+RETURNING INTO CLAUSE
+---------------------
+DECLARE
+NAME_1 TAB1.NAME%TYPE;
+ADD TAB1.ADD%TYPE;
+
+NAME_2 TAB1%ROWTYPE;
+
+DELETE FROM TAB1 WHERE EMP_ID=10
+RETURNING NAME,ADD BULK COLLECT INTO NAME_1,ADD_1;
+
+DELETE FROM TAB1 WHERE EMP_ID = 10
+RETURNING NAME,ADD INTO NAME_2;
+
+Use bulk collect keyword when there are multiple rows affected.
+
+PCTFREE and PCTUSED
+-------------------
+pctfree and pctused in all_tables
+
+pctfree means how much space should be left in the block for updates. pctfree 20 means the block will be filled upto 80%
+pctused means. pctused 40 means when the block falls below 40% then it will be considered available for insertion and filled upto 80%
+
+create table vrc11 (msisdn varchar2(100))
+tablespace users
+pctfree 10;
+
+ANALYZE TABLE
+-------------
+Analyze table vrc3 compute statistics;
+select * from vrc3;Now cost,cardinality and bytes will be shown.
+
+ANALYZE TABLE orders DELETE STATISTICS; 
+
+Analyze Table - The below statistics are updated in user_tables.
+
+*Number of rows (NUM_ROWS)
+* Number of data blocks below the high water mark—the number of data blocks that have been formatted to receive data, regardless whether they currently contain data or are empty (BLOCKS)
+* Number of data blocks allocated to the table that have never been used (EMPTY_BLOCKS)
+Average available free space in each data block in bytes (AVG_SPACE)
+
+DBMS_STATS.GATHER_TABLE_STATS(OWNNAME => MIS_DEL,
+                                      TABNAME          => TEMP_CDR,
+				      PARTNAME         => ,
+                                      CASCADE          => TRUE,
+                                      ESTIMATE_PERCENT => DBMS_STATS.AUTO_SAMPLE_SIZE,
+                                      DEGREE           => 20
+				      	);
+ESTIMATE_PERCENT - Percentage of rows to be estimated.
+CASCADE - Whether to analyze indexes or not.
+
+BEGIN
+dbms_stats.gather_table_stats('MIS_DEL','TEST1') ;
+END;
+
+CHECK IF A STRING IS ALPHABETIC,NUMERIC,ALPHANUMERIC
+----------------------------------------------------
+SELECT LENGTH(TRIM(TRANSLATE(STR1,'+-.0123456789',' '))) FROM DUAL;
+SELECT LENGTH(TRIM(TRANSLATE(STR1,'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',' '))) FROM DUAL;
+
+JOBS
+-----
+SELECT * FROM USER_JOBS; 
+
+CREATE OR REPLACE PROCEDURE UPSS_MIS_FCC_PROC(V_DATE VARCHAR2)
+UPSS_MIS_FCC_PROC(to_char(sysdate-1,'yyyymmdd'));
+
+CREATE OR REPLACE PROCEDURE UPSS_MIS_FCC_PROC(V_DATE DATE)
+test1_proc('21-APR-2016');
+
+Execute daily - SYSDATE + 1
+Execute hourly - SYSDATE + 1/24
+Execute every 10 mins - SYSDATE + 10/1440
+Execute every 30 secs - SYSDATE + 30/86400
+Execute every 7 days - SYSDATE + 7
+
+Everyday at 12 midnight : TRUNC(SYSDATE+1)
+Everyday at 8 am : TRUNC(SYSDATE + 1) + 8/24
+Everyday at 5 pm : TRUNC(SYSDATE + 1) + 17/24
+TRUNC(SYSDATE+1)+(7/24)+(50/1440);
+
+
+CREATE TABLE WITH PARALLEL
+--------------------------
+CREATE TABLE TAB1 PARALLEL 5 NOLOGGING AS SELECT * FROM TEST2;
+If degree is high then it will use FTS even if index is present.
+Alter table tab3 noparallel;
+Alter table tab3 parallel 4;
+
+
+DB LINKS
+---------
+A database link is a schema object in one database that enables you to access objects on another database. 
+To create a private database link, you must have the CREATE DATABASE LINK system privilege. 
+To create a public database link, you must have the CREATE PUBLIC DATABASE LINK system privilege. 
+Also, you must have the CREATE SESSION system privilege on the remote Oracle database.
+
+CREATE DATABASE LINK TO_UPZ4CDR CONNECT TO MIS_AP INDENTIFIED BY 'XXXX' USING 'UPZ4CDR'
+
+ANALYTICAL FUNCTIONS
+--------------------
+
+RANK
+DENSE RANK
+LAG 
+LEAD
+FIRST_VALUE
+LAST_VALUE
+ROW_NUMBER
+
+Analytic functions compute an aggregate value based on a group of rows. They differ from aggregate functions in that they return multiple rows for each group. The group of rows is called a window and is defined by the analytic_clause.
+
+Query-Partition-Clause
+The PARTITION BY clause logically breaks a single result set into N groups, according to the criteria set by the partition expressions. The analytic functions are applied to each group independently, they are reset for each group.
+
+Order-By-Clause
+The ORDER BY clause specifies how the data is sorted within each group (partition). This will definitely affect the output of the analytic function.
+
+Windowing-Clause
+The windowing clause gives us a way to define a sliding or anchored window of data, on which the analytic function will operate, within a group. This clause can be used to have the analytic function compute its value based on any arbitrary sliding or anchored window within a group. The default window is an anchored window that simply starts at the first row of a group an continues to the current row.
+
+
+Query partition clause
+
+SELECT EMP_ID,DEPT_NO,SUM(SAL) OVER (PARTITION BY DEPT_NO) SAL_SUM FROM EMP;
+SELECT EMP_ID,DEPT_NO,SUM(SAL) OVER (PARTITION BY DEPT_NO ORDER BY DEPT_NO) SAL_SUM FROM EMP;
+Both the queries above will give the same result.
+
+SELECT EMP_ID,DEPT_NO,SUM(SAL) OVER () SAL_SUM FROM EMP; it will use the entire table.
+
+RANK function will assign the same rank to duplicates and skip the next rank depending on how many duplicates.
+DENSE_RANK function will assign the same rank to duplicates but wont skip the next rank.
+
+SELECT EMP_ID,DEPT_NO,RANK() OVER (ORDER BY DEPT_NO) RANK FROM EMP;
+
+SELECT EMP_ID,DEPT_NO,DENSE_RANK() OVER (PARTITION BY DEPT_NO ORDER BY EMP_ID) RANK FROM EMP; - rank in each department
+
+select emp_id,emp_name,dept_id,sal,max(sal) over (partition by dept_id) from vrc1;
+select emp_id,emp_name,dept_id,sal,min(sal) over (partition by dept_id) from vrc1;
+
+select emp_no,dept_no,sal,dense_rank() over (partition by dept_no order by sal) sum from emp2;
+select emp_no,dept_no,sal,max(sal) over (partition by dept_no) max from emp2;
+
+select emp_no,dept_no,sal,lag(sal,1,0) over (order by sal) prev_sal,sal-lag(sal,1,0) over (order by sal) diff from emp2;
+select emp_no,dept_no,sal,lead(sal,1,0) over (order by sal) next_sal,sal-lead(sal,1,0) over (order by sal desc) diff from emp2;
+
+select emp_no,dept_no,sal,max(sal) over (partition by dept_no)max from emp2;
+
+order by is compulsory in lag
+
+second highest ??
+
+select emp_id,emp_name,dept_id,sal,lag(sal,1,0) over(order by sal) PREV_SAL from vrc1;
+1 - offset - means from prev row
+0 - in case offset is outside window
+
+select emp_id,emp_name,dept_id,sal,lead(sal, 1, 0) over(order by sal) NEXT_SAL   from vrc1;
+
+SELECT EMP_ID,NAME,SAL,SUM(SAL) OVER(ORDER BY EMP_ID ROWS 2 PRECEDING) SUM FROM TEST5;
+SELECT EMP_ID,DEPT_NO,SAL,SUM(SAL) OVER(PARTITION BY DEPT_NO ORDER BY EMP_ID ROWS 2 PRECEDING) SUM FROM EMP;
+
+select emp_no,dept_no,sal,max(sal) over (partition by dept_no order by sal 
+RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)max from emp2;
+select emp_no,dept_no,sal,min(sal) over (partition by dept_no)max from emp2;
+
+even if there is null still it will show the correct value. if there is no order by then it will show the correct value.
+
+select emp_no,dept_no,sal,first_value(sal) over (partition by dept_no order by sal)min from emp2;
+select emp_no,dept_no,sal,last_value(sal) over (partition by dept_no order by sal)min from emp2;
+
+FIRST VALUE AND LAST VALUE are used to get the value of the previous/next row within the current row. It can also be accomplished using lag and lead.
+
+select emp_no,dept_no,sal,last_value(sal) over (partition by dept_no order by sal
+range between unbounded preceding and unbounded following )max from emp2;
+
+SELECT EMP_NO,DEPT_NO,SAL,RANK() OVER(PARTITION BY DEPT_NO ORDER BY SAL DESC) RANK FROM EMP2;
+RANK WILL BECOME ULTO.
+
+SELECT EMP_NO,DEPT_NO,SAL,FIRST_VALUE(SAL) OVER (ORDER BY SAL ROWS 1 PRECEDING) PREV
+FROM EMP2;
+
+SELECT EMP_NO,DEPT_NO,SAL,FIRST_VALUE(SAL) OVER (ORDER BY SAL ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) PREV
+FROM EMP2;
+
+SELECT EMP_NO,DEPT_NO,SAL,LAST_VALUE(SAL) OVER (ORDER BY SAL ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING) NEXT
+FROM EMP2;
+
+The windowing_clause gives some analytic functions a further degree of control over this window within the current partition, or whole result set if no partitioning clause is used. The windowing_clause is an extension of the order_by_clause and as such, it can only be used if an order_by_clause is present. The windowing_clause has two basic forms.
+
+RANGE BETWEEN start_point AND end_point
+ROWS BETWEEN start_point AND end_point
+
+UNBOUNDED PRECEDING : The window starts at the first row of the partition, or the whole result set if no partitioning clause is used. Only available for start points.
+
+UNBOUNDED FOLLOWING : The window ends at the last row of the partition, or the whole result set if no partitioning clause is used. Only available for end points.
+
+CURRENT ROW : The window starts or ends at the current row. Can be used as start or end point.
+
+value_expr PRECEDING : A physical or logical offset before the current row using a constant or expression that evaluates to a positive numerical value. When used with RANGE, it can also be an interval literal if the order_by_clause uses a DATE column.
+
+value_expr FOLLOWING : As above, but an offset after the current row.
+
+The addition of the order_by_clause without a windowing_clause means the query is now returning a running average.
+In fact, the start point must be before or equal to the end point. In addition, the current row does not have to be part of the window. The window can be defined to start and end before or after the current row.
+
+For analytic functions that support the windowing_clause, the default action is "RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW". 
+
+Top-N queries using rank fn
+select * from
+(select emp_id,emp_name,dept_id,sal,dense_rank() over (partition by dept_id order by sal desc) rank
+from vrc1)
+where rank <=3; 
+
+Rank and dense_rank will give same rank to same values. Row_number will give consecutive numbers.
+
+SELECT EMP_NO,DEPT_NO,SAL,AVG(SAL) OVER (PARTITION BY DEPT_NO) AVG FROM EMP2;
+It will ignore the nulls but give correct result.
+
+SELECT EMP_NO,DEPT_NO,SAL,AVG(SAL) OVER (PARTITION BY DEPT_NO order by sal) AVG FROM EMP2;
+It will give wrong value due to order by
+
+SELECT EMP_NO,DEPT_NO,SAL,AVG(SAL) OVER (PARTITION BY DEPT_NO order by sal rows between unbounded preceding
+and unbounded following) AVG FROM EMP2;
+It will give correct value
+
+SELECT EMP_NO,DEPT_NO,SAL,ROW_NUMBER() OVER (PARTITION BY DEPT_NO ORDER BY SAL) ROW_NUM FROM EMP2;
+ROW_NUMBER is used to assign a number to each row.
+
+Difference between rows between and range between - creates a problem if there is duplicate row. Range between considers the value instead of row.
+
+select id,name,sal,sum(sal) over (order by sal) sum from emp;
+
+id name sal	sum
+1  ar	100	100 	
+2  ab	200	500 - it will be 300 if rows between is given
+3  ac	200	500
+4  ad	300	800
+
+-------------FOURTH PART--------------------------------------------------------------------------------------------------------------------------------
+
+ROLLUP AND CUBE
+---------------
+
+ROLLUP
+------
+In addition to the regular aggregation results we expect from the GROUP BY clause, the ROLLUP extension produces group subtotals from right to left and a grand total. If "n" is the number of columns listed in the ROLLUP, there will be n+1 levels of subtotals.
+
+The last decade has seen a tremendous increase in the use of query, reporting, and on-line analytical processing (OLAP) tools, often in conjunction with data warehouses and data marts. Enterprises exploring new markets and facing greater competition expect these tools to provide the maximum possible decision-making value from their data resources.
+
+Oracle expands its long-standing support for analytical applications in Oracle8i release 8.1.5 with the CUBE and ROLLUP extensions to SQL. Oracle also provides optimized performance and simplified syntax for Top-N queries. These enhancements make important calculations significantly easier and more efficient, enhancing database performance, scalability and simplicity.
+
+One of the key concepts in decision support systems is "multi-dimensional analysis":
+
+Use the ROLLUP extension in tasks involving subtotals.
+
+Cube is used for cross-tabulation. It produces 2^n subtotal combinations.
+
+select id1,id2,sum(sales) from test2
+group by id1,rollup(id2);
+
+select id1,id2,sum(sales) from test2
+group by rollup(id1,id2);
+
+SELECT id1,id2,sum(sales) FROM test2
+group by cube(id1,id2);
+
+rollup provides n+1 levels of subtotals.
+cube provide 2^n levels of subtotals.
+
+GROUPING
+--------
+It accepts a single column as a parameter and returns "1" if the column contains a null value generated as part of a subtotal by a ROLLUP or CUBE operation or "0" for any other value, including stored null values.
+
+select id1,id2,sum(sales),grouping(id2)
+from test2
+group by rollup (id1,id2);
+
+
+GROUPING_ID
+-----------
+The GROUPING_ID function provides an alternate and more compact way to identify subtotal rows. Passing the dimension columns as arguments, it returns a number indicating the GROUP BY level.
+
+select id1,id2,sum(sales),grouping_id(id1,id2)
+from test2
+group by rollup (id1,id2);
+
+GROUPING SETS
+-------------
+Calculating all possible subtotals in a cube, especially those with many dimensions, can be quite an intensive process. If you don't need all the subtotals, this can represent a considerable amount of wasted effort.
+
+select id1,id2,sum(sales),grouping_id(id1,id2)
+from test2
+GROUP BY GROUPING SETS((id1,id2),(id2,id3));
+
+
+REGULAR EXPRESSIONS
+-------------------
+Regular expressions enable you to search for patterns in string data by using standardized syntax conventions. You specify a regular expression by means of the following types of characters:
+
+Metacharacters, which are operators that specify search algorithms
+Literals, which are the characters for which you are searching
+
+(f|ht)tps?:
+
+REGEXP_LIKE
+This function searches a character column for a pattern. Use this function in the WHERE clause of a query to return rows matching the regular expression you specify.
+WHERE REGEXP_LIKE((hr.employees.first_name, '^Ste(v|ph)en$')
+
+REGEXP_REPLACE
+This function searches for a pattern in a character column and replaces each occurrence of that pattern with the pattern you specify.
+REGEXP_REPLACE(hr.countries.country_name, '(.)', '\1 ')
+
+REGEXP_INSTR
+This function searches a string for a given occurrence of a regular expression pattern. You specify which occurrence you want to find and the start position to search from. This function returns an integer indicating the position in the string where the match is found.
+REGEXP_INSTR(hr.employees.email, '\w+@\w+(\.\w+)+') - it returns the starting position
+
+REGEXP_SUBSTR
+This function returns the actual substring matching the regular expression pattern you specify.
+REGEXP_SUBSTR('Oracle 2010', 'O r a c l e', 1, 1, 'x')
+
+REGEXP_COUNT
+It returns the number of times the given pattern appears in the given string.
+REGEXP_COUNT('Albert Einstein', 'e', 7, 'c')
+his function invocation returns the number of times that e (but not E) appears in the string 'Albert Einstein', starting at character position 7:
+
+a.b - any character
+a+b - one or more occurrence of a
+a*b - zero or more occurrence of a
+a?b - zero or one occurrence of a
+a{3} - 3 ocurrence of a
+a{3,} - atleast 3
+a{3,5} - 3 to 5 ocurrence of a
+[abcd] - match any character 
+[^abcd] - non matching any character 
+a|b - or operator
+abc\+def - escape character
+^abc - start with abc
+abc$ - end with abc
+[:upper:],[:alpha:],[:digit:],[:alnum:] - posix character
+[^[:upper:]] - not upper
+[a-f],[0-9] - any one matching will give true
+\n - back reference
+\d - matches digit character
+\D - non digit
+\w - alphanumeric or _
+\s - space character
+\AL - search for A in beginning
+\BL- search for B in end
+
+select regexp_count(name,'c',1,'c') from test2;
+select regexp_count(name,'c',1) from test2;
+
+select regexp_instr(name,'[bc]') from test2; - returns the position of start of a pattern
+
+select regexp_substr(name,'[:lower:]') from test2; - returns the matching pattern
+
+SELECT
+  REGEXP_REPLACE(name,
+                 '([[:digit:]]{3})\.([[:digit:]]{3})\.([[:digit:]]{4})',
+                 '(\1) \2-\3') "REGEXP_REPLACE"
+  FROM test2;
+  
+select REGEXP_REPLACE(name, '(.)', '\1 ') from test2;
+select regexp_replace(name,'( ){2,}',' ') reg from test2;
+
+^[hd]og - start with
+[^b]og - not contains b
+
+PARTITIONING
+------------
+Partitioning enhances the performance, manageability, and availability of a wide variety of applications and helps reduce the total cost of ownership for storing large amounts of data. Partitioning allows tables, indexes, and index-organized tables to be subdivided into smaller pieces, enabling these database objects to be managed and accessed at a finer level of granularity. 
+
+Partitioning allows a table, index, or index-organized table to be subdivided into smaller pieces, where each piece of such a database object is called a partition. Each partition has its own name, and may optionally have its own storage characteristics.
+
+Partitioning Key
+Each row in a partitioned table is unambiguously assigned to a single partition. The partitioning key is comprised of one or more columns that determine the partition where each row will be stored. Oracle automatically directs insert, update, and delete operations to the appropriate partition through the use of the partitioning key.
+
+Partitioned Tables
+Any table can be partitioned into a million separate partitions except those tables containing columns with LONG or LONG RAW datatypes. You can, however, use tables containing columns with CLOB or BLOB datatypes.
+
+Partitioning can provide tremendous benefit to a wide variety of applications by improving performance, manageability, and availability. It is not unusual for partitioning to improve the performance of certain queries or maintenance operations by an order of magnitude. Moreover, partitioning can greatly simplify common administration tasks.
+
+Basic partitioning method
+-------------------------
+Single-Level Partitioning
+Composite Partitioning
+
+Range Partitioning - values less than clause
+
+Hash Partitioning - Hash partitioning maps data to partitions based on a hashing algorithm that Oracle applies to the partitioning key that you identify. The hashing algorithm evenly distributes rows among partitions, giving partitions approximately the same size. It is used when a partitioning key can't be identified.
+
+List Partitioning - List partitioning enables you to explicitly control how rows map to partitions by specifying a list of discrete values for the partitioning key in the description for each partition.
+
+Composite partitioning is a combination of the basic data distribution methods; a table is partitioned by one data distribution method and then each partition is further subdivided into subpartitions using a second data distribution method. All subpartitions for a given partition together represent a logical subset of the data.
+
+Just like partitioned tables, partitioned indexes improve manageability, availability, performance, and scalability. They can either be partitioned independently (global indexes) or automatically linked to a table's partitioning method (local indexes). In general, you should use global indexes for OLTP applications and local indexes for data warehousing or DSS applications. Also, whenever possible, you should try to use local indexes because they are easier to manage. When deciding what kind of partitioned index to use, you should consider the following guidelines in order:
+
+If the table partitioning column is a subset of the index keys, use a local index. If this is the case, you are finished. If this is not the case, continue to guideline 2.
+
+If the index is unique and does not include the partitioning key columns, then use a global index. If this is the case, then you are finished. Otherwise, continue to guideline 3.
+
+If your priority is manageability, use a local index. If this is the case, you are finished. If this is not the case, continue to guideline 4.
+
+If the application is an OLTP one and users need quick response times, use a global index. If the application is a DSS one and users are more interested in throughput, use a local index.
+
+You cannot explicitly add a partition to a local index. Instead, new partitions are added to local indexes only when you add a partition to the underlying table. Likewise, you cannot explicitly drop a partition from a local index. Instead, local index partitions are dropped only when you drop a partition from the underlying table.
+
+A local index can be unique. However, in order for a local index to be unique, the partitioning key of the table must be part of the index's key columns.
+
+CREATE TABLE invoices
+(invoice_no    NUMBER NOT NULL,
+ invoice_date  DATE   NOT NULL,
+ comments      VARCHAR2(500))
+PARTITION BY RANGE (invoice_date)
+(PARTITION invoices_q1 VALUES LESS THAN (TO_DATE('01/04/2001', 'DD/MM/YYYY')) TABLESPACE users,
+ PARTITION invoices_q2 VALUES LESS THAN (TO_DATE('01/07/2001', 'DD/MM/YYYY')) TABLESPACE users,
+ PARTITION invoices_q3 VALUES LESS THAN (TO_DATE('01/09/2001', 'DD/MM/YYYY')) TABLESPACE users,
+ PARTITION invoices_q4 VALUES LESS THAN (TO_DATE('01/01/2002', 'DD/MM/YYYY')) TABLESPACE users);
+
+
+CREATE TABLE invoices
+(invoice_no    NUMBER NOT NULL,
+ invoice_date  DATE   NOT NULL,
+ comments      VARCHAR2(500))
+PARTITION BY HASH (invoice_no)
+PARTITIONS 4
+STORE IN (users, users, users, users);
+
+CREATE TABLE invoices
+(invoice_no    NUMBER NOT NULL,
+ invoice_date  DATE   NOT NULL,
+ comments      VARCHAR2(500))
+PARTITION BY HASH (invoice_no)
+(PARTITION invoices_q1 TABLESPACE users,
+ PARTITION invoices_q2 TABLESPACE users,
+ PARTITION invoices_q3 TABLESPACE users,
+ PARTITION invoices_q4 TABLESPACE users);
+
+CREATE TABLE invoices
+(invoice_no    NUMBER NOT NULL,
+ invoice_date  DATE   NOT NULL,
+ comments      VARCHAR2(500))
+PARTITION BY RANGE (invoice_date)
+SUBPARTITION BY HASH (invoice_no)
+SUBPARTITIONS 8
+(PARTITION invoices_q1 VALUES LESS THAN (TO_DATE('01/04/2001', 'DD/MM/YYYY')),
+ PARTITION invoices_q2 VALUES LESS THAN (TO_DATE('01/07/2001', 'DD/MM/YYYY')),
+ PARTITION invoices_q3 VALUES LESS THAN (TO_DATE('01/09/2001', 'DD/MM/YYYY')),
+ PARTITION invoices_q4 VALUES LESS THAN (TO_DATE('01/01/2002', 'DD/MM/YYYY'));
+
+
+
+Partitioning Indexes
+
+There are two basic types of partitioned index.
+
+Local - All index entries in a single partition will correspond to a single table partition (equipartitioned). They are created with the LOCAL keyword and support partition independance. Equipartioning allows oracle to be more efficient whilst devising query plans.
+Global - Index in a single partition may correspond to multiple table partitions. They are created with the GLOBAL keyword and do not support partition independance. Global indexes can only be range partitioned and may be partitioned in such a fashion that they look equipartitioned, but Oracle will not take advantage of this structure.
+Both types of indexes can be subdivided further.
+
+Prefixed - The partition key is the leftmost column(s) of the index. Probing this type of index is less costly. If a query specifies the partition key in the where clause partition pruning is possible, that is, not all partitions will be searched.
+Non-Prefixed - Does not support partition pruning, but is effective in accessing data that spans multiple partitions. Often used for indexing a column that is not the tables partition key, when you would like the index to be partitioned on the same key as the underlying table.
+
+
+Local Prefixed Indexes
+
+CREATE INDEX invoices_idx ON invoices (invoice_date) LOCAL;
+
+CREATE INDEX invoices_idx ON invoices (invoice_date) LOCAL
+ (PARTITION invoices_q1 TABLESPACE users,
+  PARTITION invoices_q2 TABLESPACE users,
+  PARTITION invoices_q3 TABLESPACE users,
+  PARTITION invoices_q4 TABLESPACE users);
+
+CREATE INDEX invoices_idx ON invoices (invoice_date) GLOBAL 
+PARTITION BY RANGE (invoice_date)
+ (PARTITION invoices_q1 VALUES LESS THAN (TO_DATE('01/04/2001', 'DD/MM/YYYY')) TABLESPACE users,
+  PARTITION invoices_q2 VALUES LESS THAN (TO_DATE('01/07/2001', 'DD/MM/YYYY')) TABLESPACE users,
+  PARTITION invoices_q3 VALUES LESS THAN (TO_DATE('01/09/2001', 'DD/MM/YYYY')) TABLESPACE users,
+  PARTITION invoices_q4 VALUES LESS THAN (MAXVALUE) TABLESPACE users);
+
+Global Index:  A global index is a one-to-many relationship, allowing one index partition to map to many table partitions.  The docs says that a "global index  can be partitioned by the range or hash method, and it can be defined on any type of partitioned, or non-partitioned, table".
+
+Local Index: A local index is a one-to-one mapping between a index partition and a table partition.  In general, local indexes allow for a cleaner "divide and conquer" approach for generating fast SQL execution plans with partition pruning.
+
+
+Local partitioned indexes allow the DBA to take individual partitions of a table and indexes offline for maintenance (or reorganization) without affecting the other partitions and indexes in the table.
+
+In a local partitioned index, the key values and number of index partitions will match the number of partitions in the base table.
+
+
+CREATE INDEX year_idx
+on all_fact (order_date)
+LOCAL
+(PARTITION name_idx1),
+(PARTITION name_idx2),
+
+
+A global partitioned index is used for all other indexes except for the one that is used as the table partition key. Global indexes partition OLTP (online transaction processing) applications where fewer index probes are required than with local partitioned indexes. In the global index partition scheme, the index is harder to maintain since the index may span partitions in the base table.
+
+For example, when a table partition is dropped as part of a reorganization, the entire global index will be affected. When defining a global partitioned index, the DBA has complete freedom to specify as many partitions for the index as desired.
+
+Now that we understand the concept, let's examine the Oracle CREATE INDEX syntax for a globally partitioned index:
+
+CREATE INDEX item_idx
+on all_fact (item_nbr)
+GLOBAL
+(PARTITION city_idx1 VALUES LESS THAN (100)),
+(PARTITION city_idx1 VALUES LESS THAN (200)),
+(PARTITION city_idx1 VALUES LESS THAN (300)),
+(PARTITION city_idx1 VALUES LESS THAN (400)),
+(PARTITION city_idx1 VALUES LESS THAN (500));
+
+
+Local Prefixed Indexes
+A local index is prefixed if it is partitioned on a left prefix of the index columns and the subpartioning key is included in the index key. Local prefixed indexes can be unique or nonunique.
+
+For example, if the sales table and its local index sales_ix are partitioned on the week_num column, then index sales_ix is local prefixed if it is defined on the columns (week_num, xaction_num). On the other hand, if index sales_ix is defined on column product_num then it is not prefixed.
+
+Local Nonprefixed Indexes
+A local index is nonprefixed if it is not partitioned on a left prefix of the index columns or if the index key does not include the subpartitioning key. You cannot have a unique local nonprefixed index unless the partitioning key is a subset of the index key.
+
+https://docs.oracle.com/database/121/VLDBG/GUID-19F204BC-202C-4579-85AD-A51FAFC1C746.htm#VLDBG1260
+https://docs.oracle.com/database/121/VLDBG/GUID-A43726D5-300D-4F5E-8FF3-85F057BC4CD3.htm#VLDBG1263
+
+Performance Implications of Prefixed and Nonprefixed Indexes
+It is more expensive to probe into a nonprefixed index than to probe into a prefixed index. If an index is prefixed (either local or global) and Oracle is presented with a predicate involving the index columns, then partition pruning can restrict application of the predicate to a subset of the index partitions.
+
+For example, in Figure 3-4, if the predicate is deptno=15, the optimizer knows to apply the predicate only to the second partition of the index. (If the predicate involves a bind variable, the optimizer does not know exactly which partition but it may still know there is only one partition involved, in which case at run time, only one index partition is accessed.)
+
+When an index is nonprefixed, Oracle often has to apply a predicate involving the index columns to all N index partitions. This is required to look up a single key, or to do an index range scan. For a range scan, Oracle must also combine information from N index partitions. For example, in Figure 3-5, a local index is partitioned on chkdate with an index key on acctno. If the predicate is acctno=31, Oracle probes all 12 index partitions.
+
+Of course, if there is also a predicate on the partitioning columns, then multiple index probes might not be necessary. Oracle takes advantage of the fact that a local index is equipartitioned with the underlying table to prune partitions based on the partition key. For example, if the predicate in Figure 3-5 is chkdate<3/97, Oracle only has to probe two partitions.
+
+So for a nonprefixed index, if the partition key is a part of the WHERE clause but not of the index key, then the optimizer determines which index partitions to probe based on the underlying table partition.
+
+When many queries and DML statements using keys of local, nonprefixed, indexes have to probe all index partitions, this effectively reduces the degree of partition independence provided by such indexes.
+
+Partition Pruning - Oracle is searching in only a particular partition and skipping other partitions.
+
+Partition range single - single literal in where clause on partion_key column
+Partition range inlist - IN Operator
+
+11G new features
+----------------
+1.Pivot
+2.COntinue keyword in plsql
+3.Virtual columns
+
+12C New features
+----------------
+1.Invisible columns
+
+2.Multiple indexes on the same column
+SQL> CREATE INDEX emp_ind1 ON EMP(ENO,ENAME);
+SQL> CREATE BITMAP INDEX emp_ind2 ON EMP(ENO,ENAME) INVISIBLE;
+
+3.Adding multiple new partitions
+SQL> ALTER TABLE emp_part ADD PARTITION
+		PARTITION p4 VALUES LESS THAN (35000),
+		PARTITION p5 VALUES LESS THAN (40000);
+
+4.Drop and truncate multiple partitions/sub-partitions
+SQL> ALTER TABLE emp_part DROP PARTITIONS p4,p5 UPDATE GLOBAL INDEXES;
+SQL> ALTER TABLE emp_part TRUNCATE PARTITIONS p4,p5 UPDATE GLOBAL INDEXES;
+
+5.Splitting a single partition into multiple new partitions
+SQL> ALTER TABLE emp_part SPLIT PARTITION p_max INTO
+		(PARTITION p3 VALUES LESS THAN (25000),
+		 PARTITION p4 VALUES LESS THAN (30000), PARTITION p_max);
+
+6.Truncate table CASCADE
+TRUNCATE TABLE <table_name> CASCADE;
+TRUNCATE TABLE <table_name> PARTITION <partition_name> CASCADE;
+
+7.ROW limiting for Top-N result queries
+
+8.Varchar2 length increased to 32767
+
+9.Default value can reference sequences
+This is also for developers who struggle to maintain unique values in Primary Key columns. While creating a table default column can be referenced by sequence.nextval.
+
+10.Boolean in SQL
+As of Oracle 11g Boolean is not a supported data type in SQL and 12c you can enjoy this feature.
+
+
+
+FLASHBACK TABLE
+---------------
+DB should be in archivelog mode and
+alter database set flashback on
+
+Flashback object privilege or flashback any table system privilege should be present.
+
+SELECT COUNT(*) FROM flashback_query_test AS OF TIMESTAMP TO_TIMESTAMP('2004-03-29 13:34:12', 'YYYY-MM-DD HH24:MI:SS');
+
+SELECT COUNT(*) FROM   flashback_query_test AS OF SCN 722452;
+SELECT current_scn FROM v$database;
+
+SCN - System change number present in oracle's clock and incremented everytime we commit.
+
+FLASHBACK TABLE flashback_drop_test TO BEFORE DROP;
+
+FLASHBACK TABLE
+---------------
+Use the FLASHBACK TABLE statement to restore an earlier state of a table in the event of human or application error. The time in the past to which the table can be flashed back is dependent on the amount of undo data in the system. Also, Oracle Database cannot restore a table to an earlier state across any DDL operations that change the structure of the table.
+
+ALTER TABLE table ENABLE ROW MOVEMENT; 
+
+Enable row movement means rowid can be changed.
+
+alter table mytable shrink space;
+
+1.to compress the table rows into less data blocks, and Oracle moves down the high water mark to release the space.  This makes full-table scans run faster.
+2.flashback table
+
+FLASHBACK TABLE EMP TO SCN 123456; 
+
+FLASHBACK TABLE EMP TO TIMESTAMP 
+TO_TIMESTAMP('2005-04-04 09:30:00', 'YYYY-MM-DD HH:MI:SS')
+
+TO BEFORE DROP
+
+Oracle Database retrieves all indexes defined on the table retrieved from the recycle bin except for bitmap join indexes. 
+
+The database also retrieves all triggers and constraints defined on the table except for referential integrity constraints that reference other tables.
+
+The retrieved indexes, triggers, and constraints have recycle bin names. Therefore it is advisable to query the USER_RECYCLEBIN view before issuing a FLASHBACK TABLE ... TO BEFORE DROP statement so that you can rename the retrieved triggers and constraints to more usable names.
+
+The materialized view logs cannot be flashed back along with the table.
+
+When you drop a table, any indexes on the table are dropped and put into the recycle bin along with the table. If subsequent space pressures arise, then the database reclaims space from the recycle bin by first purging indexes. In this case, when you flash back the table, you may not get back all of the indexes that were defined on the table.
+
+ALTER SESSION SET recyclebin = ON;
+
+SELECT * FROM TEMP_13;
+
+FLASHBACK TABLE "BIN$SUcxYlyEDlbgUyNiKAoNGQ==$0" TO BEFORE DROP;
+
+object name in recyclebin
+
+FLASHBACK VERSION QUERY
+-----------------------
+
+SELECT DBMS_FLASHBACK.GET_SYSTEM_CHANGE_NUMBER AS scn FROM   dual;
+--14669554616135
+
+SELECT CURRENT_SCN FROM V$DATABASE;
+
+UPDATE TEMP_13 SET TYPE = LOWER(TYPE);
+
+BEGIN
+DBMS_FLASHBACK.ENABLE_AT_SYSTEM_CHANGE_NUMBER(14669554616135);
+END;
+
+SELECT * FROM TEMP_13 AS OF TIMESTAMP TO_TIMESTAMP('2017-02-24 17:58:00', 'YYYY-MM-DD HH24:MI:SS');
+
+SELECT * FROM TEMP_13 AS OF SCN(14669554616135);
+
+SELECT versions_xid XID, versions_startscn START_SCN,
+  versions_endscn END_SCN, versions_operation OPERATION,
+  empname, salary
+FROM emp
+VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE
+WHERE empno = 111;
+
+operation - I/D
+
+It will return as much is present in undo.
+
+SELECT * FROM VEL_USER_24feb;
+
+delete from VEL_USER_24feb where username ='shitals';
+
+SELECT versions_xid XID, versions_startscn START_SCN,
+versions_endscn END_SCN, versions_operation OPERATION,FULLNAME, PASSWORD, USERNAME, FUNCTION_, EMAIL, MOBILE, ADMIN, DEL_RIGHTS, USER_TYPE, CALL_ID, IS_FIRSTTIME_USER, INCIDENT_NUMBER, SESSION_ID, LOG_OFF_FLAG, LAST_LOGIN_DATE, CREATED_DATE, MANUAL_UPLOAD_ACCESS, SAM_ID, ROLL
+FROM VEL_USER_24feb VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE
+WHERE empno = 111;
+
+FLASHBACK TABLE VEL_USER_24feb TO SCN 14669584863972;
+
+EXTERNAL TABLES
+---------------
+The external tables feature is a complement to existing SQL*Loader functionality. It enables you to access data in external sources as if it were in a table in the database.
+
+External tables are created using the SQL CREATE TABLE...ORGANIZATION EXTERNAL statement. When you create an external table, you specify the following attributes:
+
+TYPE - specifies the type of external table. The two available types are ORACLE_LOADER type and the ORACLE_DATAPUMP type.
+
+The ORACLE_LOADER access driver is the default. It can perform only data loads, and the data must come from text datafiles.
+
+The ORACLE_DATAPUMP access driver can perform both loads and unloads. The data must come from binary dump files. Loads to internal tables from external tables are done by fetching from the binary dump files. Unloads from internal tables to external tables are done by populating the external tables' binary dump files.
+
+DEFAULT DIRECTORY - specifies the default location of files that are read or written by external tables. The location is specified with a directory object
+
+ACCESS PARAMETERS - describe the external data source and implements the type of external table that was specified. Each type of external table has its own access driver that provides access parameters unique to that type of external table. See Access Parameters.
+
+LOCATION - specifies the location of the external data. 
+
+A directory object maps a name to a directory name on the file system. 
+
+Creating and Loading an External Table Using ORACLE_LOADER
+----------------------------------------------------------
+
+1. Execute the following SQL statements to set up a default directory (which contains the data source) and to grant access to it:
+
+CREATE DIRECTORY ext_tab_dir AS '/usr/apps/datafiles';
+GRANT READ ON DIRECTORY ext_tab_dir TO SCOTT;
+
+2. Create a traditional table named emp:
+CREATE TABLE emp (emp_no CHAR(6), last_name CHAR(25), first_name CHAR(20), middle_initial CHAR(1), hire_date DATE, dob DATE);
+
+3.Create an external table named emp_load:
+
+SQL> CREATE TABLE emp_load
+  2    (employee_number  CHAR(5),employee_dob CHAR(20), employee_last_name CHAR(20), employee_first_name  CHAR(15),
+  6     employee_middle_name CHAR(15), employee_hire_date   DATE)
+  8  ORGANIZATION EXTERNAL
+  9    (TYPE ORACLE_LOADER
+ 10     DEFAULT DIRECTORY def_dir1
+ 11     ACCESS PARAMETERS
+ 12       (RECORDS DELIMITED BY NEWLINE
+ 13        FIELDS (employee_number CHAR(2),employee_dob CHAR(20),employee_last_name CHAR(18),employee_first_name CHAR(11),
+ 17                employee_middle_name CHAR(11),employee_hire_date CHAR(10) date_format DATE mask "mm/dd/yyyy")
+ 20       )
+ 21     LOCATION ('info.dat')
+ 22    );
+ 
+4. Load the data from the external table emp_load into the table emp:
+
+SQL> INSERT INTO emp (emp_no,         first_name,       middle_initial,        last_name,     hire_date,   dob)
+  7  (SELECT employee_number, employee_first_name, substr(employee_middle_name, 1, 1),employee_last_name,       employee_hire_date, to_date(employee_dob,'month, dd, yyyy') FROM emp_load);
+
+5. Perform the following select operation to verify that the information in the .dat file was loaded into the emp table:
+
+SQL> SELECT * FROM emp;
+ 
+
+Unloading data into an external file
+-------------------------------------
+Oracle 10g lets you create a new external table from data in your database, which goes into a flat file pushed from the database using the ORACLE_DATAPUMP access driver. 
+
+ create table export_empl_info
+ organization external
+  ( type oracle_datapump
+     default directory xtern_data_dir
+     location ('empl_info_rpt.dmp')
+   ) as select * from empl_info
+
+
+SQL LOADER
+----------
+SQL*Loader loads data from external files into tables of an Oracle database. 
+
+SQL Loader input -> Datafile and ctl file
+Output -> Bad file, discarded file, log file, input to database
+
+SQL*Loader Control File
+The control file is a text file written in a language that SQL*Loader understands. The control file tells SQL*Loader where to find the data, how to parse and interpret the data, where to insert the data, and more.
+
+Although not precisely defined, a control file can be said to have three sections.
+
+The first section contains session-wide information, for example:
+
+Global options such as bindsize, rows, records to skip, and so on
+INFILE clauses to specify where the input data is located
+
+The second section consists of one or more INTO TABLE blocks. Each of these blocks contains information about the table into which the data is to be loaded, such as the table name and the columns of the table.
+
+The third section is optional and, if present, contains input data.
+
+Batch file
+SQLLDR APPL_TRAI/Chngme#13@UPZ2ARC1X CONTROL=TRADE.CTL DIRECT=TRUE
+PAUSE
+Direct - Direct path insert
+Pause - TO wait for user to press return key
+
+
+CTL file
+
+OPTIONS(skip=1,rows=10000)
+load data
+infile "BHR_DATA1.csv" BADFILE  mydat1.bad  DISCARDFILE mydat1.dis 
+APPEND into table BHR_DATA1
+fields terminated by ',' OPTIONALLY ENCLOSED BY '"'
+(MSISDN,DATA)
+begindata
+100,'aaa'
+200,'bbb'
+
+Just into - table should be blank
+Truncate into - where condition can be given after into clause
+
+Discard files
+-------------
+It contains the records that were rejected because it didn't match the where clause.
+
+
+SPOOL
+-----
+@echo off
+
+sqlplus  APPL_TRAI/Chngme#13@UPZ2ARC1X @BHR_SCRIPT.SQL
+
+pause
+
+echo - show the commands that are executing
+head - heading separator character
+pause - wait for return key
+termout - display the output on the cmd
+serveroutput - whether to display the output of dbms_output on screen
+trimspool - blanks after every spooled line
+pages - no. of lines on each page of output
+
+feedback - Displays the number of records returned by a script when a script selects at least n records.
+ON or OFF turns this display on or off. Turning feedback ON sets n to 1. Setting feedback to zero is equivalent to turning it OFF.SET FEEDBACK OFF also turns off the statement confirmation messages such as 'Table created' and 'PL/SQL procedure successfully completed' that are displayed after successful SQL or PL/SQL statements.
+
+verify - it will display 2 lines for substituted variables
+old 1: select * from students where "major" = '&majorValue'
+new 1: select * from students where "major" = 'Music'
+
+
+set echo off
+set head off
+set pages 0
+set feedback off
+set pause off
+set verify off
+set termout off
+set linesize 32767
+SET serveroutput on
+set trimspool on
+
+spool BHR_CDR_JUL2015_DATA_II2GV30R154DUL.txt;
+
+SELECT 'CIRCLE_ID'||'|'||'ACCOUNT_ID'||'|'||'CDR_TYPE'||'|'||'MSISDN'||'|'||'ORIG_NUMBER'||'|'||'DEST_NUMBER'||'|'||'FWD_NUMBER'|from dual;
+
+SELECT /*+PARALLEL(A,16)*/ CIRCLE_ID||'|'||ACCOUNT_ID||'|'||CDR_TYPE||'|'||A.MSISDN||'|'||ORIG_NUMBER||'|'||DEST_NUMBER||'|'||FWD_NUMBER||'|'||CALL_TYPE FROM  ARCHIVAL_ADMIN.MED_UNIFIED_CDR_C16_JUL_2015  A,BHR_DATA1 B WHERE A.MSISDN=B.MSISDN;
+
+SPOOL OFF;
+EXIT;
+
+When spooling from more than one circle then del and append is needed.
+
+del rpt_check.xls ;
+spool rpt_check.xls APPEND;
+--------------------------------------
+SET HEADING OFF;
+set lines 200;
+set echo off;
+set feedback off;
+set markup html on
+
+SET TERMOUT OFF
+
+DEFINE dynamic_filename = idle
+COLUMN which_dynamic NEW_VALUE dynamic_filename
+
+SELECT   'MIS_CEO_SMS_TRACKER_'
+       ||TO_CHAR( SYSDATE, 'DD_MON_YYYY' )
+       ||'.xls'   which_dynamic
+  FROM dual;
+
+SET TERMOUT ON
+
+SPOOL &dynamic_filename append;
+
+SELECT 'DATE','CIRCLE','MSG_NAME','SMS_TARGET_TIME','SMS_DELIVERY_TIME','STATUS(AUTO/MANUAL)','REASON (IF DELAY)' FROM DUAL; 
+
+spool off;
+set markup html off
+exit;
+
+EXEC UPSS_MIS_CEO_SMS_SLA(TO_CHAR(TRUNC(SYSDATE),'YYYYMMDD'));
+EXIT;
+
+ACCEPT	REASON	        PROMPT	' TYPE REASON AND PRESS ENTER IF ANY OF THE CIRCLE CEO SMS NOT DELIVERED ELSE ONLY PRESS ENTER  : '	;
+EXEC MIS_CEO_SMS_NOT_DELIVERED_PROC(TO_CHAR(TRUNC(SYSDATE),'YYYYMMDD'),'&REASON');
+
+EXIT;
+
+
+INDEXES IN ORACLE
+-----------------
+Bitmap index example in Oracle
+
+Oracle has what are called bitmap indexes, which are meant to be used on lowcardinality columns. A low cardinality column just means that the column has relatively few unique values. For example, a column called Sex which has only “Male” and “Female” as the two possible values is considered low cardinality because there are only two unique values in the column.
+
+A bitmap index will create separate structures for each unique value of the column(s) – so in our example, there will be one structure for “Male” and another for “Female”. And each structure will contain the same number of rows as the table. For each row inside each of those structures there will be a binary bit of 0 or 1. A 0 means that in that row corresponding to the table the structure value is not present, but a 1 means that it is present. That is why it’s called a bitmap index.
+
+When dealing with bitmap indexes, the RDBMS will actually use matrix algebra to find the rows that are being looked up.
+
+CREATE BITMAP INDEX IX_PEOPLE_NAME
+ON PEOPLE (NAME);
+
+Function-based index - These are B*Tree or bitmap indexes that store the computed result of a function on a row(s) (for example sorted results)- not the column data itself.
+
+The index is created on some function
+CREATE INDEX IX_NAME_LOWER
+ON PEOPLE (LOWER(NAME));
+
+TYPES OF INDEX IN ORACLE
+------------------------
+B*Tree Indexes – common indexes in Oracle. They are similar construct to a binary tree, they provide fast access by key, to an individual row or range of rows, normally requiring very few reads to find the correct row.
+
+The B*Tree index has several subtypes:
+
+Index Organised Tables – A table stored in a B*Tree structure
+B*Tree Cluster Indexes – They are used to index the cluster keys
+Reverse Key Indexes – The bytes in the key are reversed. This is used to stop sequential keys being on the same block like 999001, 999002, 999003 would be reversed to 100999, 200999, 300999 thus these would be located on different blocks.
+Descending Indexes – They allow data to be sorted from big to small (descending) instead of small to big (ascending).
+Bitmap Indexes – With a bitmap index , a single index entry uses a bitmap to point to many rows simultaneously, they are used with low data that is mostly read-only. Schould be avoided in OLTP systems.
+
+Creating an index on the primary key of a table is generally considered a good idea. But some tables have very few columns, and if that is true, then what typically happens is that almost all of the data that’s in the table is duplicated in the index. Remember that an index will also store the column data for any columns on which the index is defined. So, for tables with very few columns, creating a normal index could be redundant.
+
+Normal, non-IOT tables, actually store the table rows in an unsorted order. But IOT’s on the other hand store table rows in a B-tree index structure, which is then sorted by the primary key of the table. Because an IOT is still a table, you can actually create more indexes on the IOT, but doing that may not make sense depending on your data situation.
+
+CREATE TABLE PEOPLE (NAME VARCHAR(50),ADDRESS VARCHAR(70), CONSTRAINT PK_NAME  PRIMARY KEY(NAME)) ORGANIZATION INDEX;
+
+ALTER INDEX index_name REBUILD COMPUTE STATISTICS;
+DROP INDEX index_name;
+
+Statistics get populated in User_index after gathering statistics.
+Blevel = height - 1; It doesn't count the leaf block. It is max 2 to 3 even for millions of rows.
+So 2 to 3 IOs to reach the block
+
+For select statement the default is Full Table Scan (FTS).
+Primary key will always have index on it.
+
+Create unique index idx on vrc1 (emp_id) ;
+
+In unique index, row id is not part of key.
+In non-unique key, row id is part of key to make it unique.
+
+Types of scan for B-Tree Index :
+Full Table Scan
+Index Unique scan
+Index Range scan
+Index Fast Full Scan
+
+Fast full scan is used when there are multiple entries and we are searching for a range.
+
+FTS or Full Table Scan
+Whole table is read upto high water mark
+Uses multiblock input/output
+Buffer from FTS operation is stored in LRU end of buffer cache
+
+Index Unique Scan
+Single block input/output
+
+Index Fast Full Scan
+Multi block i/o possible
+Returned rows may not be in sorted order
+
+Index Full Scan
+Single block i/o
+Returned rows generally will be in sorted order
+
+Default block size is 8 kb.So in one I/O read, only 1 such block is read. Multiblock IO means more than blocks read at once. Usually max 1mb can be read in a single IO.
+
+Oracle Database collects the following statistics for an index. Statistics marked with an asterisk are always computed exactly. For conventional indexes, when you compute or estimate statistics, the statistics appear in the data dictionary views USER_INDEXES, ALL_INDEXES, and DBA_INDEXES in the columns shown in parentheses.
+
+* Depth of the index from its root block to its leaf blocks (BLEVEL)
+Number of leaf blocks (LEAF_BLOCKS)
+Number of distinct index values (DISTINCT_KEYS)
+Average number of leaf blocks for each index value (AVG_LEAF_BLOCKS_PER_KEY)
+Average number of data blocks for each index value (for an index on a table) (AVG_DATA_BLOCKS_PER_KEY)
+Index has to be rebuild when we are changing tablespace. Indexes get analyzed when tables are analyzed.
+
+create unique index idx on vrc1 (emp_id) compute statistics;
+compute statistics is not required because when index is created it gets analyzed automatically.Index need not be analyzed separately. When tables are analyzed, indexes also get analyzed.
+
+
+SELECT * FROM TEST2 A,TEST3 B WHERE A.ID = B.ID;
+SORT MERGE JOIN is used. both the tables are sorted and then the result is merged based on the given condition.
+HASH JOIN is a new type of join algorithm. It creates a hash for the smaller table and then for the larger table and then matches the rows.
+
+SM Join is used only for not analyzed join.
+Hash Join - It is used by CBO.
+
+Nested Loop Join - There is yet another kind of joins called Nested Loop Join. In this kind of joins, each record from one source is probed against all the records of the other source. The performance of nested loop join depends heavily on the number of records returned from the first source. If the first source returns more record, that means there will be more probing on the second table. If the first source returns less record, that means, there will be less probing on the second table.
+It is only used by RBO so rule hint has to be given.
+
+create index idx1 on temp_churn1 (msisdn,cdr_type) parallel 5 nologging;
+
+DB Link
+-------
+
+CREATE DATABASE LINK TO_UPZ4CDR CONNECT TO MIS_AP INDENTIFIED BY 'XXXX' USING 'UPZ4CDR'
+
+
+PARALLEL EXECUTION
+------------------
+Each SQL statement undergoes an optimization and parallelization process when it is parsed. If parallel execution is chosen, then the following steps occur:
+
+The user session or shadow process takes on the role of a coordinator, often called the query coordinator.The query coordinator obtains the necessary number of parallel servers.
+
+The SQL statement is executed as a sequence of operations (a full table scan to perform a join on a nonindexed column, an ORDER BY clause, and so on). The parallel execution servers performs each operation in parallel if possible.
+
+When the parallel servers are finished executing the statement, the query coordinator performs any portion of the work that cannot be executed in parallel. For example, a parallel query with a SUM() operation requires adding the individual subtotals calculated by each parallel server.
+
+Finally, the query coordinator returns any results to the user.
+
+When Not to Implement Parallel Execution
+
+Parallel execution is not normally useful for:
+
+Environments in which the typical query or transaction is very short (a few seconds or less). This includes most online transaction systems. Parallel execution is not useful in these environments because there is a cost associated with coordinating the parallel execution servers; for short transactions, the cost of this coordination may outweigh the benefits of parallelism.
+Environments in which the CPU, memory, or I/O resources are already heavily utilized. Parallel execution is designed to exploit additional available hardware resources; if no such resources are available, then parallel execution will not yield any benefits and indeed may be detrimental to performance.
+
+Parallel execution performs these operations in parallel using multiple parallel processes. One process, known as the parallel execution coordinator, dispatches the execution of a statement to several parallel execution servers and coordinates the results from all of the server processes to send the results back to the user.
+
+The table is divided dynamically (dynamic partitioning) into load units called granules and each granule is read by a single parallel execution server. The granules are generated by the coordinator. Each granule is a range of physical blocks of the table employees. The mapping of granules to execution servers is not static, but is determined at execution time. When an execution server finishes reading the rows of the table employees corresponding to a granule, it gets another granule from the coordinator if there are any granules remaining. This continues till all granules are exhausted, in other words. the entire table employees has been read. The parallel execution servers send results back to the parallel execution coordinator, which assembles the pieces into the desired full table scan.
+
+EXPLAIN PLAN
+-------------
+Explain plan displays the execution plan chosen by SQL optimizer for DML statements. It is the sequence of statements that oracle performs to run the query.
+
+It shows the following:
+1. Ordering of the tables
+2. Access method like FTS
+3. Join method
+4. Data operations like filter sort or aggregation
+5. Optimization such as cost or cardinality
+6. Partitioning - set of accessed partitions
+7. Parallel execution
+
+EXPLAIN PLAN FOR
+SELECT * FROM cm_subscriber_mp A where A.msisdn = '9432252990';
+
+U can also check in V$SQL_PLAN
+http://docs.oracle.com/cd/B10501_01/server.920/a96533/optimops.htm#51553
+
+
+
+MATERIALIZED VIEWS
+------------------
+A materialized view is a database object that contains the results of a query. Materialized views are most often used in data warehousing / business intelligence applications where querying large fact tables with thousands of millions of rows would result in query response times that resulted in an unusable application.
+
+Materialised view - a table on a disk that contains the result set of a query
+
+Normal view - a query that pulls data from the underlying table
+
+A view is nothing but a SQL query, takes the output of a query and makes it appear like a virtual table, which does not take up any storage space or contain any data
+But Materialised views are schema objects, it storing the results of a query in a separate schema object(i.e., take up storage space and contain datas). This indicates the materialized view is returning a physically separate copy of the table data. When used on remote tables, it is replication.
+
+CREATE MATERIALIZED VIEW view-name
+BUILD [IMMEDIATE | DEFERRED]
+REFRESH [FAST | COMPLETE | FORCE ]
+ON [COMMIT | DEMAND ]
+[[ENABLE | DISABLE] QUERY REWRITE]
+[ON PREBUILT TABLE]
+AS
+SELECT ...;
+
+The BUILD clause options are shown below.
+
+IMMEDIATE : The materialized view is populated immediately.
+DEFERRED : The materialized view is populated on the first requested refresh.
+
+The following refresh types are available.
+
+FAST : A fast refresh is attempted. If materialized view logs are not present against the source tables in advance, the creation fails.
+COMPLETE : The table segment supporting the materialized view is truncated and repopulated completely using the associated query.
+FORCE : A fast refresh is attempted. If one is not possible a complete refresh is performed.
+
+A refresh can be triggered in one of two ways.
+
+ON COMMIT : The refresh is triggered by a committed data change in one of the dependent tables.
+ON DEMAND : The refresh is initiated by a manual request or a scheduled task.
+
+The QUERY REWRITE clause tells the optimizer if the materialized view should be considered for query rewrite operations.
+
+CREATE MATERIALIZED VIEW emp_mv
+BUILD IMMEDIATE 
+REFRESH FORCE
+ON DEMAND
+AS
+SELECT * FROM cm_subs@db1.world;
+
+-------------------------------------------------------------------------------------------------------------------------
+CREATE TABLE emp_mv AS
+SELECT * FROM emp@db1.world;
+
+-- Build the materialized view using the existing table segment.
+CREATE MATERIALIZED VIEW emp_mv
+REFRESH FORCE
+ON DEMAND
+ON PREBUILT TABLE
+ENABLE QUERY REWRITE
+AS
+SELECT * FROM emp@db1.world;
+
+Since a complete refresh involves truncating the materialized view segment and re-populating it using the related query, it can be quite time consuming and involve a considerable amount of network traffic when performed against a remote table. To reduce the replication costs, materialized view logs can be created to capture all changes to the base table since the last refresh. This information allows a fast refresh, which only needs to apply the changes rather than a complete refresh of the materialized view.
+
+CREATE MATERIALIZED VIEW LOG ON scott.emp
+TABLESPACE users
+WITH PRIMARY KEY
+INCLUDING NEW VALUES;
+
+BEGIN
+DBMS_MVIEW.refresh('EMP_MV');
+END;
+
+CREATE MATERIALIZED VIEW mv_complete
+REFRESH COMPLETE
+START WITH SYSDATE
+NEXT SYSDATE + 1
+AS SELECT * from test1;
+
+Unlike indexes, materialized views can be accessed directly using a SELECT statement. However, it is recommended that you try to avoid writing SQL statements that directly reference the materialized view, because then it is difficult to change them without affecting the application. Instead, let query rewrite transparently rewrite your query to use the materialized view.
+
+ALL_OBJECTS - object type is materialized view
+or
+select * from all_mviews;
+Owner
+MView_name
+query
+rewrite_enabled
+refresh_mode - demand,commit,never
+refresh_method - complete.fast,force,never
+build mode - immediate,deferred,prebuilt
+last_refresh_type
+last_refresh_date
+
+DEFERRED CONSTRAINTS
+--------------------
+
+During large transactions involving multiple dependancies it is often difficult to process data efficiently due to the restrictions imposed by the constraints. An example of this would be the update of a primary key (PK) which is referenced by foreign keys (FK). The primary key columns cannot be updated as this would orphan the dependant tables, and the dependant tables cannot be updated prior to the parent table as this would also make them orphans. Traditionally this problem was solved by disabling the foreign key constraints or deleting the original records and recreating them. Since neither of these solutions is particularly satisfactory Oracle 8i includes support for deferred constraints. A deferred constraint is only checked at the point the transaction is commited.
+
+By default constraints are created as NON DEFERRABLE but this can be overidden using the DEFERRABLE keyword. If a constraint is created with the DEFERRABLE keyword it can act in one of two ways (INITIALLY IMMEDIATE, INITIALLY DEFERRED). The default, INITIALLY IMMEDIATE, keyword causes constraint validation to happen immediate unless deferred is specifically requested. The INITIALLY DEFERRED keyword causes constraint validation to defer until commit, unless immediate is secifically requested. The following code creates two tables with a deferred constraint.
+
+CREATE TABLE tab1 (id  NUMBER(10), tab2_id NUMBER(10));
+CREATE TABLE tab2 (id  NUMBER(10));
+
+ALTER TABLE tab2 ADD PRIMARY KEY (id);
+
+ALTER TABLE tab1 ADD CONSTRAINT fk_tab1_tab2
+  FOREIGN KEY (tab2_id)
+  REFERENCES tab2 (id)
+  DEFERRABLE
+  INITIALLY IMMEDIATE;
+
+set constraint c1 deferred;
+set constraint c1 immediate;
+
+ALTER SESSION SET CONSTRAINTS = DEFERRED; -- while commit it will be checked.
+ALTER SESSION SET CONSTRAINTS = IMMEDIATE;
+
+The ALTER SESSION... statements show how the state of the constraint can be changed. These ALTER SESSION... statements will not work for constraints that are created as NOT DEFERRABLE.
+
+Constraint States
+
+Table constraints can be enabled and disabled using the CREATE TABLE or ALTER TABLE statement. In addition the VALIDATE or NOVALIDATE keywords can be used to alter the action of the state.
+
+ENABLE VALIDATE is the same as ENABLE. The constraint is checked and is guaranteed to hold for all rows.
+ENABLE NOVALIDATE means the constraint is checked for new or modified rows, but existing data may violate the constraint.
+DISABLE NOVALIDATE is the same as DISABLE. The constraint is not checked so data may violate the constraint.
+DISABLE VALIDATE means the constraint is not checked but disallows any modification of the constrained columns.
+--CONSTRAINT gets disabled FOR BOTH  disable validate and novalidate.
+
+ALTER TABLE tab1 ADD CONSTRAINT fk_tab1_tab2
+  FOREIGN KEY (tab2_id)
+  REFERENCES tab2 (id)
+  ENABLE NOVALIDATE;
+
+ALTER TABLE tab1 MODIFY CONSTRAINTS fk_tab1_tab2 ENABLE VALIDATE;
+
+SELECT APPROX_COUNT_DISTINCT(MSISDN) FROM CM_SUBS_PROFILE_KOL;
+It is a new feature in 12c to get the result very fast.
+
+cannot validate - parent keys not found
+integrity constraint violated - child record found.
+integrity constraint violated - parent key not found.
+
+ALTER TABLE TAB11 ADD CONSTRAINT C1 FOREIGN KEY (DEPT_ID) REFERENCES TAB12(DEPT_ID) DEFERRABLE INITIALLY DEFERRED; 
+WHile committing the error will come so that both tables can be changed and then committed.
+
+CURSOR C1 RETURN TEST11%ROWTYPE IS  SELECT * FROM TEST11;
+
+
+GLOBAL TEMPORARY TABLE
+----------------------
+Applications often use some form of temporary data store for processes that are to complicated to complete in a single pass. Often, these temporary stores are defined as database tables or PL/SQL tables. GTT data is stored in temp tablespace so redo logs are reduced.
+
+CREATE GLOBAL TEMPORARY TABLE my_temp_table (
+  id           NUMBER,
+  description  VARCHAR2(20)
+)
+ON COMMIT DELETE ROWS;
+
+CREATE GLOBAL TEMPORARY TABLE my_temp_table (
+  id           NUMBER,
+  description  VARCHAR2(20)
+)
+ON COMMIT PRESERVE ROWS;
+
+
+Differentiate between Syntax and runtime errors.
+A syntax error can be easily detected by a PL/SQL compiler. For eg, incorrect spelling.
+A runtime error is handled with the help of exception-handling section in an PL/SQL block. For eg, SELECT INTO statement, which does not return any rows.
+
+
+Sequences are used to generate sequence numbers without an overhead of locking. Its drawback is that the sequence number is lost if the transaction is rolled back.
+
+What packages are available to PL SQL developers?
+DBMS_OUTPUT
+DBMS_JOB
+DBMS_STATS
+
+
+What is locking in SQL? Describe its types?
+
+Locking prevents destructive interaction between concurrent transactions. Locks held until Commit or Rollback. Types of locking are: 
+Implicit Locking: Occurs for all SQL statements except SELECT.
+Explicit Locking: Can be done by user manually.
+
+Further there are two locking methods:
+1)      Exclusive: Locks out other users
+2)      Share: Allows other users to access
+
+During modifying a column:
+
+1) You can increase the width or precision of a numeric column.
+2) You can increase the width of numeric or character columns.
+3) You can decrease the width of a column only if the column contains null values or if the table has no rows.
+4) You can change the data type only if the column contains null values.
+5) You can convert a CHAR column to the VARCHAR2 data type or convert a VARCHAR2 column to the CHAR data type only if the column contains null values or if you do not change the size. 
+
+How to write sql query for the below scenario
+I/p:ORACLE
+
+O/p:
+O
+R
+A
+C
+L
+E
+i.e, splitting into multiple columns a string using sql.
+
+Answer:
+
+Select Substr(‘ORACLE’,Level,1) From Dual
+Connect By Level<= Length(‘ORACLE’);
+
+select * from v$version;
+
+Select Last Name from employee table which contain only numbers
+
+Select * from EMPLOYEE where lower(LAST_NAME)=upper(LAST_NAME)
+
+You cannot MODIFY data in a View if it contains the following:
+1) Group Functions
+2) A Group By clause
+3) The Distinct Keyword
+4) The Pseudo column ROWNUM Keyword.
+5) Columns defined by expressions (Ex; Salary * 12)
+
+FORCE VIEW
+----------
+CREATE OR REPLACE force VIEW forceview
+AS
+SELECT * FROM table1;
+
+SELECT * FROM forceview;
+
+view forceview has errors.
+
+When view is created on base tables that do not exist.
+
+ORAERROR 051 - no foreign keys are specified
+
+How to give Privilege A One Procedure In Package - not possible
+grant execute on pkg1 to mis_kar; - kar can edit the proc and execute it.
+
+EXECUTE ANY PROCEDURE - it is a powerful any statement that allows to execute any procedure in any schema.
+
+A LONG column is not copied when a table is created using a sub query. A LONG column cannot be included in a GROUP BY or an ORDER BY clause. Only one LONG column can be used per table. No constraint can be defined on a LONG column.
+
+SELECT STATEMENT,GOAL=CHOOSE
+
+TABLE ACCESS BY INDEX ROWID
+
+TABLE ACCESS FULL
+
+SORT UNIQUE
+SORT ORDER BY
+SORT GROUP BY
+SORT AGGREGATE
+
+INDEX UNIQUE SCAN
+INDEX RANGE SCAN
+INDEX SKIP SCAN
+INDEX FULL SCAN - SINGLE BLOCK I/O. Used in case of order by
+INDEX FAST FULL SCAN
+select msisdn from cm_subscriber_mp
+
+NESTED LOOP JOIN
+SORT MERGE JOIN
+HASH JOIN
+
+Index full scan starts at the root block, walks down the branches on the left hand side one by one till it gets to the first leaf block on the "left" and then reads the index one block at a time -- leaf by leaf. it reads the data "sorted". 
+
+Index range scan is same.
+
+Index FAST full scan reads the extent map for the index and using multi-block IO reads the index in big chunks. It throws out all root/branch blocks and processes the data it finds on the leaf blocks. It reads the data "in some random order". 
+
+If order by on index column then just index range scan. No need of sort order by.
+
+Hash join outer
+
+If there is condn it goes for range scan otherwise index full scan. FUll scan is not used when needed to access the table.
+
+ Access method:   Oracle has several choices of the "best" way to access data.
+
+   - Join method:  Oracle must decode between nested loops joins, hash join, etc.
+
+   - Join order: The database has choices about the	best table join order.
+
+Partition range single
+Partition rangle iterator
+Partition rangle all - not using partitions
+table storage access full
+
+invalid_cursor - close a cursor that is not opened, fetch before open, fetch after close
+Parse, Bind, Execute, Fetch
+desc func/proc
+User_tab_privs - only for tables
+user_errors - it only contains the latest errors. sequence, line, text
+
+Explain The Use Of Table Functions ?
+begin
+  for I in 1..20 loop
+    DBMS_OUTPUT.PUT_LINE('A'); 
+    I := I + 2;
+  end loop;  
+end;    
+The above is not possible
+
+view on another view - yes
+
+ORA - 01555 : When a query is running for a long time and undo space is less then the undo may not be found.
+DML privileges cascade. DDL privileges do not cascade
+
+Types are stored in : select * from user_types
+
+CREATE TYPE t_tf_row AS OBJECT (
+  id           NUMBER,
+  description  VARCHAR2(50)
+);
+
+CREATE TYPE t_tf_tab IS TABLE OF t_tf_row;
+
+CREATE OR REPLACE FUNCTION get_tab_tf (p_rows IN NUMBER) RETURN t_tf_tab AS
+  l_tab  t_tf_tab := t_tf_tab();
+BEGIN
+  FOR i IN 1 .. p_rows LOOP
+    l_tab.extend;
+    l_tab(l_tab.last) := t_tf_row(i, 'Description for ' || i);
+  END LOOP;
+
+  RETURN l_tab;
+END;
+
+STAR AND SNOWFLAKE SCHEMA
+-------------------------
+Give The Two Types Of Tables Involved In Producing A Star Schema And The Type Of Data They Hold ?
+Fact table and dimension table.
+Fact table is in the centre and dimension tables at the sides. It is used in data warehousing. 
+
+A star schema is characterized by one or more very large fact tables that contain the primary information in the data warehouse and a number of much smaller dimension tables (or lookup tables), each of which contains information about the entries for a particular attribute in the fact table. 
+
+A star query is a join between a fact table and a number of lookup tables. Each lookup table is joined to the fact table using a primary-key to foreign-key join, but the lookup tables are not joined to each other.
+
+Snowflake Schemas
+  
+The snowflake schema is a more complex data warehouse model than a star schema, and is a type of star schema. It is called a snowflake schema because the diagram of the schema resembles a snowflake. 
+ 
+Snowflake schemas normalize dimensions to eliminate redundancy. That is, the dimension data has been grouped into multiple tables instead of one large table. The result is more complex queries and reduced query performance.
+
+Bitmap index should be present in the fact table for the joins
+ 
+if user-defined exception is raised then sqlcode=1 and sqlerrm='User defined exception'
+
+UTL_FILE
+--------
+declare 
+  f1  UTL_FILE.FILE_TYPE;
+begin
+  f1 := UTL_FILE.FOPEN('my_directory', 'test_file', 'w');
+
+  UTL_FILE.PUT(f1, 'This is the first line');
+  UTL_FILE.PUT(f1, 'This is the second line');
+  UTL_FILE.PUT_LINE(f1, 'This is the third line');
+
+  UTL_FILE.FCLOSE(f1);
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Exception: SQLCODE=' || SQLCODE || '  SQLERRM=' || SQLERRM);
+    RAISE;
+end;
+
+ARCHITECTURE
+------------
+Oracle DB has two main components - Database and Instance
+
+Instance contains memory structures and processes to connect to the database.
+
+The memory structures are SGA, PGA and software area code. The background processes are DBWr,LGWr,PMON,SMON,CKPT,ARCn,RECO.
+
+SGA contains -
+1.Buffer Cache
+2.Redo log buffer
+3.Large Pool
+4.Java Pool
+5.Shared Pool - Data dictionary and library cache
+
+Buffer cache - It contains the data retrieved from database. It is controlled by DBA_CACHE_SIZE.
+
+Redo log buffer - It contains the details of the changes made to any table by DML statements. It is stored in redo log buffer before it is wriiten to redo log files.
+
+Large pool - Used to relieve the burden on shared pool. Used in RMAN backups and parallel queries.
+
+Java pools - Java code and java objects.
+
+Shared pool - It contains library cache and dictionary cache. Library cache contains exec plan for recently executed statements. Dictionary cache contains the data dictionaries.
+Software area code - oracle software resides here.
+
+PGA - Used to store session specific information. It contains the bind variables and sort area
+
+There are 3 types of process
+User process
+Server process
+Background process
+
+Every user process has PGA associated with it
+
+DBWR - It is used to write the data from buffer cache to the datafiles
+LGWR - It is used to write the redo logs from redo logs buffer to redo log files
+CKPT - It gives a signal to DBWr to write the data to datafiles. It will change ctrl file header when log file changes
+SMON - It is used to recover the system from crash by applying the redo log changes to the database. It is system level...for system failure.
+PMON - It monitors the other bg processes. It is used to clean up after failed processes by releasing locks and rolling back the transactions
+ARCH - In archivelog mode, it is used to archive the redo log files.
+RECO - It is used for recovery
+
+Logical structures
+-------------------
+Block, extent,segment,tablespace
+
+3 types of tablespace:
+Permanent
+Undo
+Temporary
+
+
+Physical structures
+-------------------
+Datafiles, control files and redo log files.
+
+When a transaction is committed, the changes are written in redo logs from redo log buffer along with SCN. There may be 3 groups of redo log files and they are multiplexed(into 2).
+
+control files contain the database_name, creation_date, archive log history.
+
+There are 2 parameter files - init.ora and spfile.ora
+
+init.ora - initialization file
+spfile.ora - dynamic parameter file. It can be changed at runtime.
+
+Dirty buffers - data written in buffer cahne and needs to be written to disk.
+
+Redo log buffer - Records all the changes made to database data blocks. Mainly used for recovery.
+
+DBWR works when dirty buffers are full or check point occurs.
+
+CKPT - updates the control files and signal DBWr to write the database files to disk.
+
+Coordinator Job Que (CJQ) - DBMS_Jobs
+
+The main difference is that UNDO data can make the change go away, and REDO can make the change happen again if necessary. UNDO holds a copy of previous data untill the transaction commits and for some time afterwards (depending on undo retention period specified), thus providing read consistence, since the user can read the data as it is at the time a transaction started, while transaction is still in the process. Capturing the undo data enables Oracle to roll back the uncommitted data. Undo data is used for both read consistency and to recover from failed transactions. 
+
+Meanwhile REDO log records all the changes to the database as they happen. If the database crashes, Oracle will first read redo logs and apply all committed changes 9the ones that didn't end up in data files yet, due to the crash) before opening the database for regular use.
+Undo is stored in undo tablespace
+
+If archiving is disabled (the database is in NOARCHIVELOG mode), a filled redo log file is available after the changes recorded in it have been written to the datafiles.
+
+If archiving is enabled (the database is in ARCHIVELOG mode), a filled redo log file is available to LGWR after the changes recorded in it have been written to the datafiles and the file has been archived. 
+
+Control file and datafile header should have the same SCN.
+
+pseudocols in oracle
+A pseudocolumn behaves like a table column, but is not actually stored in the table. You can select from pseudocolumns, but you cannot insert, update, or delete their values. Eg - rowid, rownum, hierarchical queries
+
+How to add trailing zeros to numbers. - rpad,lpad
+
+How to add a not null column to a table with data. - alter table test11 add new_col number default 1 not null ;
+
+Can we have a Procedure in Specification but not in Package body. If yes then whats the use of it? - not allowed
+
+
+5.Table A has 100 rows, Table B has Zero rows so number of rows returned from  below query
+select a.* from a, b;
+It will return 0 rows always
+
+If you're halfway through a transaction and perform a DDL statement, such as truncating a table, then the transaction commits.
+create table before commit - the transaction will get committed.
+
+DBMS_OUTPUT is a library and put_line is a function
+commit/rollback can be done in exception part of a program
+
+select trunc(sysdate,'MM') from dual; - first day of the month
+select trunc(add_months(sysdate,-1),'MM') from dual; - first day of prev month
+
+
+Query Tuning
+------------
+1.Instead of != give a range
+2.Instead of like use =
+3.Use exist instead of IN
+4.Avoid functions in where clause
+5.Use union all instead of union
+6.Avoid correlated subquery
+7.Avoid sort and group by
+8.Use the same datatype in where condition
+9.Don't write extra columns
+10.Don't use distinct unless required
+11.column name alias should be used
+12.Use bind variables
+13.Materialized views with query rewrite - for static tables
+14.FTS for large amount of data
+15.Analytic functions
+16.Parallel hint
+17.create index on the columns most used
+18.Drop index before loading data
+
+1. Table from which fetching data
+2. If the table is huge consider purging it. 
+3. Analyze the table
+4. Joins - can use temp table to split it. If there are multiple tables in join and 1 is huge then make temp table before.
+5. Cost in explain plan
+6. Index is used or not - otherwise create index
+7. Can use bulk collect to speed up insertion
+8. Ordering of joins 
+9. Driving sites
+
+
+PARAMETERS
+-----------
+SELECT * FROM V$PARAMETER;
+SELECT * FROM V$PARAMETER2;
+
+SELECT * FROM V$PARAMETER WHERE UPPER(NAME) LIKE '%TIMED_STATISTICS%';
+value should be true
+SELECT * FROM V$PARAMETER WHERE UPPER(NAME) LIKE '%MAX_DUMP_FILE_SIZE%';
+value is unlimited
+SELECT * FROM V$PARAMETER WHERE UPPER(NAME) LIKE '%USER_DUMP_DEST%';
+value contains the location of trace files.
+
+ALTER SESSION SET TIMED_STATISTICS = TRUE;
+
+SELECT * FROM V$PARAMETER WHERE UPPER(NAME) LIKE '%SQL_TRACE%';
+Value should be true

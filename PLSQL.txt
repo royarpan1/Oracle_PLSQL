@@ -1,0 +1,1398 @@
+---------------FIRST PART-----------------------------------------------------------------------------------------------------------------------------
+
+PLSQL is a highly portable, high performance transaction processing language.
+It can be directly called from command line interface.
+It offers various error checking, exception handling
+Various datatypes
+Many programming structures
+Structured programming through functions and procedures
+It supports static and dynamic sql
+
+Identifiers are used to name the constant, variable, procedure, function. Reserved keywords can't be used as identifiers.
+
+Delimiter is a symbol with a special meaning like =, :=, ;
+
+PLSQL is a block structured language. Each block contains below parts:
+1. Declaration
+2. Executable commands
+3. Exception handling
+
+
+DECLARE
+NUM1 NUMBER;
+NAME1 VARCHAR2(500);
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE('A'||NUM1); 
+END;
+
+DATATYPES
+---------
+1.SCALAR - NUMBER,VARCHAR2,INT,FLOAT,CHAR,DATE
+2.LOB - CLOB,BLOB
+3.COMPOSITE - COLLECTION,RECORDS
+4.REFERENCE - POINTER TO OTHER DATA ITEMS - %type
+
+USER-DEFINED SUBTYPE
+--------------------
+A subtype is a subset of another datatype.
+
+DECLARE
+SUBTYPE NAME IS VARCHAR2(100);
+NAME1 NAME;
+
+BEGIN
+NAME1 := 'ABC'
+OPT('A');
+
+VARIABLE
+-------- 
+It is a name given to a storage area that the program can manipulate.
+Default keyword is used to set a default value for a variable
+
+NAME1 VARCHAR2(500) DEFAULT 'ARPAN';
+
+Local and global variables - Variables in the declare section are global. Inside begin end if there is another declare then those are local.
+
+SELECT INTO 
+-----------
+DECLARE
+C_NAME CUST.NAME%TYPE;
+
+C_ADD CUST.ADD%TYPE;
+
+BEGIN
+SELECT NAME,ADD INTO C_NAME,C_CUST 
+FROM CUST 
+WHERE CUST.ID = '1';
+END;
+
+%TYPE
+-----
+DECLARE
+num2 number;
+C_NAME CUST.NAME%TYPE;
+
+C_ADD CUST.ADD%TYPE;
+num2 num1%type;
+
+DECLARE
+CURSOR C1 IS SELECT NAME,ADD FROM CUST;
+C_NAME C1.NAME%TYPE;
+
+C_ADD C1.ADD%TYPE;
+
+CONSTANT
+--------
+A constant holds a value that once declared does not change in the program.
+
+DECLARE
+PI CONSTANT NUMBER := 3.27;
+
+TYPES OF PLSQL BLOCK
+---------------------
+PL/SQL blocks are of mainly two types.
+
+Anonymous blocks - They should be used in the same session.
+Named Blocks - They are stored in the database.
+
+LEXICAL UNITS
+-------------
+A line of PL/SQL text contains groups of characters known as lexical units, which can be classified as follows:
+
+delimiters (simple and compound symbols)
+identifiers, which include reserved words
+literals
+comments
+
+CONDITIONS
+----------
+1.IF-THEN-ELSIF
+2.CASE
+3.SEARCHED CASE
+
+1. 
+BEGIN
+IF(A<10) THEN
+C := C+10;
+ELSIF (A<20) THEN
+C := C + 20;
+ELSE
+C := C + 30;
+END IF;
+END;
+
+2.
+DECLARE
+GRADE := 'A';
+
+BEGIN
+CASE GRADE
+WHEN 'A' THEN OPT ('PASS');
+WHEN 'B' THEN OPT ('NOT PASS');
+WHEN 'C' THEN OPT ('FAIL');
+ELSE OPT ('HELLO');
+END CASE;
+END;
+
+3.
+DECLARE
+GRADE := 'A';
+
+BEGIN
+CASE 
+WHEN GRADE = 'A' THEN OPT ('PASS');
+WHEN GRADE = 'B' THEN OPT ('NOT PASS');
+WHEN GRADE = 'C' THEN OPT ('FAIL');
+ELSE OPT ('HELLO');
+END CASE;
+END;
+
+LOOPS
+-----
+1.BASIC LOOP
+2.WHILE LOOP
+3.FOR LOOP
+4.NESTED LOOP
+
+1.
+BEGIN
+LOOP
+X := X + 10;
+IF(X > 100) THEN
+EXIT;
+END IF;
+END LOOP;
+END;
+
+BEGIN
+LOOP
+X:=X+10;
+EXIT WHEN (X>100);
+END LOOP;
+END;
+
+2.
+BEGIN
+WHILE (I<20) LOOP
+I:=I+1;
+OPT(I);
+END LOOP;
+END;
+
+3. This automatically increments by 1 after each iteration.
+BEGIN
+FOR I IN (REVERSE) 1..10 LOOP
+OPT(I);
+END LOOP;
+END;
+
+4.
+BEGIN
+<<OUTER>>
+FOR I IN 1..10 LOOP
+<<INNER>>
+FOR J IN I..10 LOOP
+OPT(I||' '||J);
+END LOOP OUTER;
+END LOOP INNER;
+END;
+
+EXIT AND CONTINUE IN LOOPS.
+
+
+EXCEPTIONS
+----------
+An error condition during program execution is called exception. To catch such conditions,the exception block is used.
+
+CASE_NOT_FOUND
+INVALID_NUMBER
+NO_DATA_FOUND
+ROWTYPE_MISMATCH
+TOO_MANY_ROWS
+ZERO_DIVIDE
+
+SQLCODE
+SQLERRM
+For user defined exception code is 1 and msg is user-defined.
+
+DECLARE
+C_NAME CUST.NAME%TYPE;
+C_ADD CUST.ADD%TYPE;
+
+BEGIN
+SELECT NAME,ADD INTO C_NAME,C_CUST FROM CUST WHERE CUST.ID = '1';
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('NO DATA FOUND');
+  WHEN TOO_MANY_ROWS THEN
+    DBMS_OUTPUT.PUT_LINE('TOO MANY ROWS');   
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('OTHERS'); 
+END;
+
+WHEN OTHERS THEN
+RAISE_APPLICATION_ERROR('-20000','HELLO');
+
+COMMON ERROR CODES
+------------------
+12154 - TNS: Couldn't resolve the connecter specified
+60 - deadlock detected while waiting for resource
+942 - table or view doesn't exist
+1555 - snapshot too old
+54 - resource busy or nowait specified
+1031 - insufficient privileges
+900 series - invalid sql statement,column ambiguous,from keyword not found,datatype matching, invalid number
+
+USER-DEFINED EXCEPTION
+----------------------
+DECLARE
+C_ID CUST.ID%TYPE := &ID;
+C_ADD CUST.ADD%TYPE;
+EX_INVALID_ID EXCEPTION;
+
+BEGIN
+  IF (C_ID <10) THEN
+    RAISE EX_INVALID_ID; or raise_application_error(-20000,'hello') it will be trapped in when others
+  END IF;
+
+EXCEPTION
+  WHEN EX_INVALID_ID THEN
+    DBMS_OUTPUT.PUT_LINE('INVALID ID');
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('OTHERS');     
+END;
+
+Print the SQLCODE and SQLERRM for unhandled exceptions.
+
+PRAGMA EXCEPTION_INIT - It is used to give a name to unnamed oracle exceptions or for user-defined exceptions.
+
+declare
+sal number;
+deadlock_detected exception;
+pragma exception_init(deadlock_detected,-60);
+
+begin
+update tab1 set name = 'Arpan';
+commit;
+exception
+when deadlock_detected then
+opt('Deadlock detected');
+when others then
+opt('Hello');
+end;
+
+SUBPROGRAM
+----------
+It is a program unit/module that performs a particular task.
+3 types of subprogram:
+
+1. At Schema level
+2. At package level
+3. Inside PL/SQL block
+
+Parameter modes in PL/SQL subprograms:
+IN,OUT,INOUT
+
+create or replace procedure temp_11(x in number, y in number, z out number) as
+begin
+ z := x + y;
+ DBMS_OUTPUT.PUT_LINE(z); 
+end;    
+
+default is in mode.
+only out mode parameter can be edited inside the procedure.
+
+create or replace procedure temp_11(x in out number) as
+begin
+ x := x * 10;
+ DBMS_OUTPUT.PUT_LINE(x); 
+end;    
+ 
+Method for passing parameters:
+1.Positional
+2.Named
+3.Mixed
+
+begin
+temp_1(a,b);
+temp_1(10,20);
+temp_1(x=>a,y=>b);
+temp_1(10,y=>a);
+end;
+
+named notation should come after positional.
+
+SELECT * FROM user_objects where object_name like 'TEMP_11'; - CREATED AND LAST_DDL.
+
+declare
+a number := 10;
+b number := 20;
+c number;
+
+procedure findMin(x in number, y in number, z out number) is
+begin
+if(x<y) then
+z := x;
+else
+z := y;
+end if;
+end;
+
+begin
+findMin(a,b,c);
+opt(c);
+end;
+
+FUNCTION
+--------
+It is same as a procedure except that it returns a value.
+
+declare 
+a number;
+b number;
+c number;
+
+function findMin (x in number, y in number) return number is
+min number;
+
+begin
+if(x<y) then
+min := x;
+else
+min := y;
+end if;
+return min;
+end;
+
+begin
+c := findMin(a,b);
+opt(c);
+end;
+
+---------------SECOND PART-----------------------------------------------------------------------------------------------------------------------
+CURSOR
+------
+Oracle creates a memory area know as context area for processing SQL statements, which contains all the information necessary for processing the statement. A cursor is a pointer to the context area. The context area holds the rows returned by a SQL statement. The set of rows that the cursor holds is called active set.
+
+Implicit cursor
+Explicit cursor
+Paramterized cursor
+REF cursor
+
+Whenever any DML statement is issued, then oracle creates an implicit cursor. It holds the rows that has to be inserted or deleted, or rows that need to be updated. It has the following attributes
+1.%FOUND
+2.%NOTFOUND
+3.%ISOPEN
+4.%ROWCOUNT
+
+ISOPEN is always false for implicit cursors. 
+
+declare
+total_rows number(10);
+
+begin
+update vrc set name = 'arpan' where name = 'vivek';
+if sql%notfound then
+opt('no rows found');
+else
+total_rows := sql%rowcount;
+opt(total_rows);
+end if;
+end;
+
+Explicit cursor is defined by programmer to gain more control over the context area. 
+
+declare
+cursor c1 is select rpt_code,rpt_name from vel_report_config;
+rpt_c vrc.rpt_code%type;
+rpt_n vrc.rpt_name%type;
+
+begin
+open c1;
+loop
+fetch c1 into rpt_c,rpt_n;
+opt(rpt_c||' '||rpt_n);
+exit when c1%notfound;
+end loop;
+end;
+
+FOR LOOP CURSOR
+---------------
+DECLARE
+CURSOR C1 IS SELECT EMP_NAME,EMP_ADD FROM EMP;
+
+BEGIN
+FOR REC IN C1 LOOP
+OPT(REC.EMP_NAME||' '||REC.EMP_ADD);
+END LOOP;
+END;
+
+PARAMETERIZED CURSOR
+--------------------
+A cursor that can be reused is a parameterized cursor. It can accept input parameters. Default values can be assigned to the cursor. The scope of the cursor parameter is local to the cursor.
+
+declare
+cursor c1(dept varchar2 := 'MARKETING') is
+select id,name from dept_table where dept_id = dept;
+
+begin
+for I in c1('SALES') loop
+opt(I.id||' '||I.name);
+end loop;
+
+for I in c1('HR') loop
+opt(I.id||' '||I.name);
+end loop;
+end;
+
+ERROR - 306 / Open param cursor without parameter
+
+
+REF CURSOR
+----------
+A REF CURSOR is a PL/SQL data type whose value is the memory address of a query work area on the database. In essence, a REF CURSOR is a pointer or a handle to a result set on the database.
+A REF CURSOR refers to a memory address on the database. Therefore, the client must be connected to the database during the lifetime of the REF CURSOR in order to access it.
+A REF CURSOR involves an additional database round-trip. While the REF CURSOR is returned to the client, the actual data is not returned until the client opens the REF CURSOR and requests the data. Note that data is not be retrieved until the user attempts to read it.
+A REF CURSOR is not updatable. The result set represented by the REF CURSOR is read-only. You cannot update the database by using a REF CURSOR.
+A REF CURSOR is not backward scrollable. The data represented by the REF CURSOR is accessed in a forward-only, serial manner. You cannot position a record pointer inside the REF CURSOR to point to random records in the result set.
+A REF CURSOR is a PL/SQL data type. You create and return a REF CURSOR inside a PL/SQL code block. It is not that necessary in coding.
+
+It is of two types -
+Strongly typed
+Weakly typed
+
+
+create or replace function fun_1(sal number) return sys_refcursor is
+l_cur sys_refcursor;
+rec l_cur%rowtype;  -- invalid
+
+begin
+if(sal<100) then
+open l_cur for 'select * from emp';
+else
+open l_cur for 'select * from emp1';
+end if;
+return l_cur;
+end;
+
+declare
+emp_rec emp%rowtype;
+l_cur sys_refcursor;
+
+begin
+l_cur := fun_1(1000);
+loop
+fetch l_cur into emp_rec;
+opt(emp_rec.name||''||emp_rec.add); 
+exit when l_cur%notfound;
+end loop;
+end;
+
+
+declare
+type auth_cursor is ref cursor return temp1%rowtype;
+c1 auth_cursor;
+r_c1 c1%rowtype;
+--rec l_cur%type;
+sal number := 10;
+
+begin
+if(sal<100) then
+open c1 for select * from temp1;
+elsif(sal<200) then
+open c1 for select * from temp1;
+end if;
+end;
+
+return type must be rowtype;
+
+declare
+ref_c sys_refcursor;
+rec temp22%rowtype;
+
+begin
+  pkg_refcur.p_get_empdets('7509080173',ref_c);
+  loop
+    fetch ref_c into rec;
+    DBMS_OUTPUT.PUT_LINE(rec.msisdn); 
+    exit when ref_c%notfound;
+   end loop;
+end;
+
+sys_refcursor should be used to fetch the data.
+
+WHERE CURRENT OF
+----------------
+
+It is used to update the row that is currently fetched by the cursor. The where condition need not be repeated. It locks the rows so that they can be updated. All the rows will be locked. 
+
+If there is a join in the cursor query then both the tables will be locked(if only for update is given). for update of var_pay means the table in which there is var_pay, only that table will be locked. Only the rows that are selected by the cursor query will be locked.
+
+declare
+cursor c1 is select msisdn from temp22
+where msisdn >  7509079362
+for update of rchg_date;
+
+begin
+  for i in C1 loop
+    DBMS_OUTPUT.PUT_LINE(i.msisdn);
+    update temp22 set rchg_date = sysdate where current of C1;
+    end loop;
+      commit;
+end;    
+     
+How is the Cursor declared in Procedure is different from Cursor defined in Package Specification?
+Access of Cursor declared in Procedure is restricted to that Procedure itself where as the Cursor declared in Package specification is Global throughout the package and can be accessed in any procedure within that Package. It can also be accessed from outside by just changing the conditions. Packaged cursor contains return type.
+
+Separating Cursor Specifications and Bodies with PL/SQL Packages
+CREATE PACKAGE emp_stuff AS
+  -- Declare cursor spec
+  CURSOR c1 RETURN employees%ROWTYPE;
+END emp_stuff;
+/
+CREATE PACKAGE BODY emp_stuff AS
+  CURSOR c1 RETURN employees%ROWTYPE IS
+    -- Define cursor body
+    SELECT * FROM employees WHERE salary > 2500;
+procedure p1 is 
+begin
+for i in c1 loop
+END emp_stuff;
+/
+
+the cursor can also be called outside the package
+
+Show the two PL/SQL cursor exceptions.
+Cursor_Already_Open
+Invaid_cursor
+Closing a cursor clears the private SQL area as well as de-allocates memory
+     
+
+RECORD
+------
+
+Record is a data structure that can hold data items of different types.
+
+Table-based
+Cursor-based
+User-defined
+
+1.
+declare
+rec customers%rowtype;
+
+begin
+select * into rec from customers where cust_id = 10;
+end;
+
+2.
+declare
+cursor c1 is select * from customers where id = 1;
+rec c1%rowtype;
+
+begin
+open c1;
+loop
+fetch c1 into rec;
+exit when c1%notfound;
+end loop;
+end;
+
+3.
+declare
+type books is record(id number,title varchar2(400),author varchar2(400));
+book1 books;
+
+begin
+book1.title := 'A';
+book1.name := 'B';
+book1.author := 'C';
+
+procedure books_print(book books) is
+begin
+opt(book.name);
+end;
+
+TRIGGERS
+--------
+Trigger is a block of code that gets fired when some DML/DDL operation is performed on a table.
+Trigger can be fired during
+1.	DML statements that modify data in a table (INSERT, UPDATE, or DELETE)
+2.	DDL statements
+3.	System events such as startup, shutdown, and error messages
+4.	User events such as logon and logoff
+
+There are two types of DML triggers based on which level it is triggered.
+1) Row level trigger - An event is triggered for each row updated, inserted or deleted. 
+2) Statement level trigger - An event is triggered for each sql statement executed.
+
+Types of DML triggers based on execution hierarchy
+1) BEFORE statement trigger
+2) BEFORE row level trigger
+3) AFTER row level trigger 
+4) AFTER statement level trigger
+
+1) BEFORE statement trigger
+
+CREATE or REPLACE TRIGGER Before_Update_Statement
+BEFORE UPDATE ON test1
+Begin 
+INSERT INTO test4(level1,update_date) Values('Before update, statement level',sysdate); 
+END;	
+
+2) BEFORE row level trigger
+
+CREATE or REPLACE TRIGGER Before_Update_Row
+BEFORE UPDATE ON test1
+FOR EACH ROW
+Begin 
+INSERT INTO test4(level1,update_date) Values('Before update, statement level',sysdate); 
+END;
+
+3) AFTER row level trigger 
+
+CREATE or REPLACE TRIGGER After_Update_Row
+AFTER UPDATE ON test1
+for each row
+Begin 
+INSERT INTO test4(level1,update_date) Values('After update, row level',sysdate); 
+END;
+
+4) AFTER statement level trigger
+
+CREATE or REPLACE TRIGGER After_Update_Statement
+AFTER UPDATE ON test1
+Begin 
+INSERT INTO test4(level1,update_date) Values('After update, statement level',sysdate); 
+END;
+
+ENABLE / DISABLE
+----------------
+alter table test5 disable all triggers;
+alter table test5 enable all triggers;
+
+ALTER TRIGGER TRI_1 DISABLE;
+ALTER TRIGGER TRI_1 ENABLE;
+
+
+NEW / OLD VALUES
+-----------------
+1)	CREATE OR REPLACE TRIGGER TRI1
+BEFORE UPDATE ON TEST5 
+FOR EACH ROW
+DECLARE
+CHECK1 VARCHAR2(100);
+BEGIN
+  IF (:NEW.SAL > 100) THEN
+    DBMS_OUTPUT.PUT_LINE('SAL is  >100');   
+  END IF;
+END;
+
+
+TO PREVENT DML OPERATION
+-------------------------
+1)	CREATE OR REPLACE TRIGGER TRI1
+BEFORE UPDATE ON TEST5 
+FOR EACH ROW
+BEGIN
+  IF (:NEW.SAL > 100) THEN
+RAISE_APPLICATION_ERROR(-20000,'SAL OUT OF RANGE');
+  END IF;
+END;
+
+2)	CREATE OR REPLACE TRIGGER TRI1
+BEFORE UPDATE ON TEST5 
+FOR EACH ROW WHEN (NEW.SAL>100)
+BEGIN
+RAISE_APPLICATION_ERROR(-20000,'SAL OUT OF RANGE');
+END;
+
+-20000 to -20099 is range for user defined errors.
+
+Mutating table error
+--------------------
+It impacts row level triggers. It occurs when trigger is changing the table that it has read from.
+Explain mutating table error.
+It occurs when a trigger tries to update a row that it is currently using. It is fixed by using views or temporary tables, so database selects one and updates the other. It is fixed by using after triggers or autonomous transactions.
+
+DDL TRIGGERS
+------------
+CREATE OR REPLACE TRIGGER tri_2 AFTER DDL
+   ON schema
+   begin
+     DBMS_OUTPUT.PUT_LINE('abc'); 
+   end;
+
+CREATE OR REPLACE TRIGGER tri_2 AFTER CREATE
+   ON schema
+   begin
+     DBMS_OUTPUT.PUT_LINE('abc'); 
+   end;
+
+CREATE OR REPLACE TRIGGER tri_2 AFTER DROP
+   ON schema
+   begin
+     RAISE_APPLICATION_ERROR(-20000,'DROP IS NOT ALLOWED');
+   end;
+
+DROP TRIGGER
+------------
+DROP TRIGGER TRI_2;
+
+CREATE OR REPLACE TRIGGER TRI_1 
+BEFORE UPDATE ON TEST1
+FOR EACH ROW
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE(:OLD.CNO); 
+    DBMS_OUTPUT.PUT_LINE(:NEW.CNO); 
+  END;
+    
+UPDATE TEST1 SET CNT=10;
+
+OLD and NEW will be same if not working on that column.
+
+INSTEAD OF TRIGGER
+------------------
+
+CREATE VIEW EMP_VU AS
+SELECT A.CNT FROM TEST1 A,TEST2 B
+WHERE A.CNO = B.CNO;
+
+UPDATE EMP_VU SET CNT=10;
+
+CREATE TRIGGER TRI_1 
+INSTEAD OF UPDATE ON EMP_VU
+BEGIN
+  UPDATE TEST1 SET CNT=10;
+  COMMIT;
+  UPDATE TEST2 SET CNT=10;
+  COMMIT;
+END;  
+
+Instead of the update statement, the trigger will get executed. 
+
+Instead of trigger is valid only for views. Not for tables.
+
+DDL TRIGGER TO PREVENT DROP ON A PARTICULAR TABLE
+-------------------------------------------------
+create or replace TRIGGER tri_1 
+before drop on schema
+begin
+  if(ora_dict_obj_type = 'TABLE') and (ora_dict_obj_name = 'TEST1') then
+raise_application_error(-20000,'U CANNOT DROP TEST1 TABLE');
+END IF;
+END;
+
+CREATE OR REPLACE TRIGGER ATMIG_TRG_LOG_DETAILS
+  AFTER CREATE OR ALTER OR DROP ON SCHEMA
+DECLARE
+  sql_text ora_name_list_t;
+  i        PLS_INTEGER;
+BEGIN
+  i := sql_txt(sql_text); 
+INSERT INTO ATMIG_DDL_LOG_DETAILS
+SELECT ORA_SYSEVENT,
+       ORA_DICT_OBJ_OWNER,
+       ORA_DICT_OBJ_NAME,
+       ORA_DICT_OBJ_TYPE,
+       SQL_TEXT(1),
+       USER,
+       SYSDATE,       
+       SYS_CONTEXT('USERENV', 'OS_USER'),
+       SYS_CONTEXT('USERENV', 'HOST'),
+       SYS_CONTEXT('USERENV', 'TERMINAL'),
+       SYS_CONTEXT('USERENV', 'IP_ADDRESS')
+  FROM DUAL;        
+END ATMIG_TRG_LOG_DETAILS;
+
+SYSTEM EVENT TRIGGERS
+---------------------
+CREATE OR REPLACE TRIGGER logon_audit
+AFTER LOGON ON DATABASE 
+BEGIN
+  INSERT INTO connection_audit
+  (login_date, user_name)
+  VALUES
+  (SYSDATE, USER);
+END;
+
+
+CREATE OR REPLACE TRIGGER logon_failures
+AFTER SERVERERROR
+ON DATABASE
+
+BEGIN
+  IF (IS_SERVERERROR(1017)) THEN
+    INSERT INTO connection_audit
+    (login_date, user_name)
+    VALUES
+    (SYSDATE, 'ORA-1017');
+  END IF;
+END logon_failures;
+
+WHEN TO USE TRIGGERS
+--------------------
+Automatically generate derived column values
+Enforce complex security authorizations
+Enforce referential integrity across nodes in a distributed database
+Provide transparent event logging
+Provide auditing
+Gather statistics on table access
+
+After triggers are used for maintaining logs. Before triggers are used to get column values before the action takes place.
+Unlike BEFORE row triggers, AFTER row triggers lock rows.
+
+Before trigger is used to enforce some referential integrity constraint. After trigger is used for maintaining logs that is auditing.
+
+We can't commit inside a trigger because it is part of the parent transaction. When the parent transaction is committed then the transactions inside the trigger are also committed. Using pragma autonomous we can start a new transaction inside a trigger and commit the same. If we rollback the parent transaction then the transaction inside the trigger also gets rolled back.
+
+CREATE OR REPLACE TRIGGER TRI_2
+AFTER UPDATE ON TEST2
+FOR EACH ROW
+DECLARE
+PRAGMA AUTONOMOUS_TRANSACTION;
+BEGIN
+  INSERT INTO TRI_1 VALUES('TEST2',SYSDATE,'AFTER UPDATE',NULL);
+  COMMIT;
+END;  
+
+Autonomous Transaction
+An autonomous transaction is an independent transaction started by another transaction, the main transaction. Autonomous transactions do SQL operations and commit or roll back, without committing or rolling back the main transaction.
+
+It can be used for audit logs even if the main transaction rolls back. It helps you build modular, reusable software components.
+It can be used in :
+1. Not nested PL/SQL blocks
+2. Triggers
+3. Procedure
+4. Package
+
+PRAGMA AUTONOMOUS_TRANSACTION;
+Write this as first line of declare.
+
+
+BULK COLLECT
+------------
+It is used to perform bulk DML operations like insert,update,delete. It reduces the context switching between SQL and PLSQL engine.
+
+BULK COLLECT: SELECT statements that retrieve multiple rows with a single fetch, improving the speed of data retrieval
+
+FORALL: INSERTs, UPDATEs, and DELETEs that use collections to change multiple rows of data very quickly
+
+declare
+cursor c1 is select msisdn,account_id from med_unified_cdr where days=trunc(sysdate-1);
+type arr is table of c1%rowtype;
+arr1 arr;
+
+begin
+open c1;
+loop
+fetch c1 bulk collect into arr1 limit 1000 
+exit when arr1.count<1;
+forall i in 1..arr1.count save exceptions;
+insert /*+append*/ into temp_ms values arr1(i);
+commit;
+for i in 1..arr1.count loop
+opt(arr1(i).msisdn||' '||sql%bulk_rowcount(i));
+end loop;
+end loop;
+commit;
+
+exceptions
+when others then
+if (sqlcode = '-24381') then
+for i in 1..sql%bulk_exceptions.count loop
+opt(arr(sql%bulk_exceptions(i).error_index).msisdn||' '||sql%bulk_exceptions(i).error_index||' '||sql%bulk_exceptions(i).error_code||' '||sqlerrm(sql%bulk_exceptions(i).error_code));
+end if;
+end loop;
+end;
+
+COLLECTIONS
+-----------
+Oracle uses collections in PL/SQL the same way other languages use arrays. Oracle provides three basic collections, each with an assortment of methods.
+
+1.Index-By Tables (Associative Arrays)
+2.Nested Table
+3.Varrays
+
+Associative Arrays(Index-by tables)
+They behave in the same way as arrays except that have no upper bounds, allowing them to constantly extend. It is indexed using BINARY_INTEGER/VARCHAR2 values, which do not need to be consecutive.The collection is extended by assigning values to an element using an index value that does not currently exist.
+
+A relatively small lookup table, where the collection can be constructed in memory each time a subprogram is invoked or a package is initialized
+Passing collections to and from the database server
+PL/SQL automatically converts between host arrays and associative arrays that use numeric key values. The most efficient way to pass collections to and from the database server is to set up data values in associative arrays, and then use those associative arrays with bulk constructs (the FORALL statement or BULK COLLECT clause).
+
+Nested tables -
+
+1.Index values are not consecutive.
+2.There is no set number of index values.
+3. You cannot rely on the order and subscripts of a nested table remaining stable as the nested table is stored in and retrieved from the database, because the order and subscripts are not preserved in the database.
+4.If you want to delete from middle.
+
+Varray - 
+
+1.The number of elements is known in advance.
+2.The elements are usually accessed sequentially.
+3.When stored in the database, varrays keep their ordering and subscripts.
+4.You must store or retrieve all elements of a varray at the same time, which is appropriate when operating on all the elements at once. However, this might be impractical for large numbers of elements.
+
+Varray is rarely used as we dont know max size in advance.
+Assoc array is ued mostly but nested table has some extra feature like multiset operation.
+nested table is used most.
+
+nested table used in bulk collect to perform a common ops on a group of data.we can navigate back and forth. we cant do this with a cursor.
+collections are used for caching the data for reduced call to the DB.
+
+Nested Table
+The main difference between the nested table and associative array is that nested tables can be stored in a database column but index-by tables cannot. In addition some DML operations are possible on nested tables when they are stored in the database. During creation the collection must be dense, having consecutive subscripts for the elements. Once created elements can be deleted using the DELETE method to make the collection sparse. The NEXT method overcomes the problems of traversing sparse collections.
+
+No need to initialise assoc array.
+ALL 3 CAN HOLD RECORDS ALSO.
+LAST AND COUNT ALWAYS SAME IN VARRAY
+COUNT IS LESS THAN LAST IN NT IF ELEMENT IS DELETED
+PRIOR OF 1 WILL BE NULL IN COLLECTIONS;
+In Nested table & asoc array count can be less than last if deleted from middle. so sometimes it becomes sparse.
+limit is present only for varray. for others it is null.
+delete can't be done in varray.
+A nested table can be stored in a database column; therefore, you can use a nested table to simplify SQL operations in which you join a single-column table with a larger table. An associative array cannot be stored in the database.
+
+DECLARE
+  TYPE table_type IS TABLE OF NUMBER(10) INDEX BY BINARY_INTEGER;
+   v_tab  table_type;
+  v_idx  NUMBER;
+BEGIN
+   FOR i IN 1 .. 5 LOOP
+    v_tab(i) := i;
+  END LOOP;
+ 
+  v_tab.DELETE(3);
+   v_idx := v_tab.FIRST;
+  
+  WHILE v_idx IS NOT NULL LOOP
+    DBMS_OUTPUT.PUT_LINE('The number ' || v_tab(v_idx));
+    v_idx := v_tab.NEXT(v_idx);
+  END LOOP;
+END;
+
+DECLARE
+TYPE EMP IS TABLE OF VARCHAR2(100) INDEX BY VARCHAR2(10);
+EMP1 EMP;
+
+BEGIN
+EMP1('ARPAN') := 'ABC';
+EMP1('VIVEK') := 'BCD';
+DBMS_OUTPUT.PUT_LINE(EMP1('ARPAN')); 
+END;
+
+DECLARE
+TYPE EMP IS VARRAY(5) OF VRC3%ROWTYPE;
+EMP1 EMP := EMP();
+
+BEGIN
+EMP1.EXTEND(2);
+EMP1(1).RPT_CODE := 'ABC';  
+EMP1(2).RPT_CODE := 'BCD';
+END;
+
+DECLARE
+  TYPE tab IS TABLE OF NUMBER(10);
+   v_tab  table_type;
+  v_idx  NUMBER;
+BEGIN
+
+v_tab := tab(1,2);
+   FOR i IN 3..5 LOOP
+    v_tab(i) := i;
+  END LOOP;
+ 
+  v_tab.DELETE(3);
+   v_idx := v_tab.FIRST;
+  
+  WHILE v_idx IS NOT NULL LOOP
+    DBMS_OUTPUT.PUT_LINE('The number ' || v_tab(v_idx));
+    v_idx := v_tab.NEXT(v_idx);
+  END LOOP;
+END;
+
+
+DECLARE
+  TYPE tab IS VARRAY(5) OF NUMBER(10);
+   v_tab  table_type;
+  v_idx  NUMBER;
+BEGIN
+
+v_tab := tab(1,2);
+   FOR i IN 3..5 LOOP
+    v_tab(i) := i;
+  END LOOP;
+
+ --DELETE not allowed in varray
+ -- v_tab.DELETE(3);
+
+ for i in 1..v_tab.last loop
+opt(v_tab(i));
+end loop;
+END;
+
+Collection is null
+No data found
+subscript beyond count
+
+Assignment and equality test
+for NT
+
+DECLARE
+  TYPE table_type IS TABLE OF NUMBER(10);
+  v_tab_1  table_type;
+  v_tab_2  table_type;
+BEGIN
+  -- Initialise the collection with two values.
+  v_tab_1 := table_type(1, 2);
+
+  -- Assignment works.
+  v_tab_2 := v_tab_1;
+END;
+
+IF v_tab_1 = v_tab_2 THEN
+    DBMS_OUTPUT.put_line('2: v_tab_1 = v_tab_2');
+  END IF;
+
+ l_tab1 := l_tab1 MULTISET UNION l_tab2;
+  l_tab1 := l_tab1 MULTISET UNION DISTINCT l_tab2;
+  l_tab1 := l_tab1 MULTISET EXCEPT l_tab2;
+l_tab1 := l_tab1 MULTISET INTERSECT l_tab2;
+
+  IF l_tab2 SUBMULTISET OF l_tab1 THEN
+    DBMS_OUTPUT.put_line('TRUE');
+    END IF;
+
+  IF 3 MEMBER OF l_tab1 THEN
+  
+NESTED TABLE IN TABLE COLUMN
+-----------------------------
+create type T11 as object (name varchar2(1000),age number);
+create type T12 as table of T11;
+
+create table manfss(num1 number,num2 number,dtls T12)
+nested table dtls store as dtls1;
+
+insert into manfss values(20,10,T12(T11('A',10),T11('B',20)));
+
+SELECT * FROM manfss;
+
+Beers
+<Collection> ...
+
+Name Kind Color
+
+COLLECTION METHODS
+------------------
+EXISTS(n) - Returns TRUE if the specified element exists.
+COUNT - Returns the number of elements in the collection.
+LIMIT - Returns the maximum number of elements for a VARRAY, or NULL for nested tables.
+FIRST - Returns the index of the first element in the collection.
+LAST - Returns the index of the last element in the collection.
+PRIOR(n) - Returns the index of the element prior to the specified element.
+NEXT(n) - Returns the index of the next element after the specified element.
+EXTEND - Appends a single null element to the collection.
+EXTEND(n) - Appends n null elements to the collection.
+EXTEND(n1,n2) - Appends n1 copies of the n2th element to the collection.
+TRIM - Removes a single element from the end of the collection.
+TRIM(n) - Removes n elements from the end of the collection.
+DELETE - Removes all elements from the collection.
+DELETE(n) - Removes element n from the collection.
+DELETE(n1,n2) - Removes all elements from n1 to n2 from the collection.
+
+drop type tab1;
+
+ALTER TYPE email_varray_typ MODIFY LIMIT 100 INVALIDATE;
+
+INVALIDATE: Invalidates all dependent objects
+CASCADE: Propagates the change to its type and table dependents
+
+drop table region_tab force
+Oracle recommends against specifying FORCE to drop object types with dependencies. This operation is not recoverable and might make the data in the dependent tables or columns inaccessible.
+
+
+---------------THIRD PART-----------------------------------------------------------------------------------------------------------------------
+
+AUTHID
+------
+
+authid current_user
+authid definer
+
+PL/SQL, by default, run with the privileges of the schema within which they are created no matter who invokes the procedure. In order for a PL/SQL package to run with invokers rights AUTHID CURRENT_USER has to be explicitly written into the package.
+
+WARNING: Writing PL/SQL code with the default authid definer, can facilitate SQL injection attacks, because an intruder would get privileges that they would not get if they used authid current_user.
+
+authid definer is the default
+
+when grant execute is given on a procedure then it is run with definer's rights.
+
+create or replace procedure pay_claim_invoker(p_claim_id IN number,p_paid_amount IN number)) 
+authid current_user
+is
+begin
+    null;
+end;
+
+create or replace package pkg_cpos_common_utils AUTHID CURRENT_USER as
+
+It is used in package and procedure
+
+PACKAGE
+-------
+Package is a schema object that holds logically related objects like procedure, variables,cursors,etc.
+
+Advantages of using packages:
+Modularity
+Encapsulation
+Hidden implementation details
+
+If a PL/SQL package declares at least one variable, constant, or cursor, then the package is stateful; otherwise, it is stateless.
+Standard package contains the usual functions like SUM,ROUND,TO_DATE,etc.
+Other common packages are DBMS_OUTPUT,DBMS_MVIEW,DBMS_FLASHBACK,DBMS_JOBS
+
+PRAGMA SERIALLY REUSABLE
+------------------------
+The pragma SERIALLY_REUSABLE indicates that the package state is needed only for the duration of one call to the server (for example, a PL/SQL anonymous block, an OCI call to the database or a stored procedure call through a database link). After this call, the storage for the package variables can be reused, reducing the memory overhead for long-running sessions. 
+
+create or replace package pkg1 is
+pragma serially_reusable;
+num1 number := 10;
+procedure proc_1;
+procedure proc_2;
+end;
+
+create or replace package body pkg1 as
+pragma serially_reusable;
+
+procedure proc_1 is
+  begin
+    num1:= 20;
+    DBMS_OUTPUT.PUT_LINE('inside proc1');
+  end;
+  procedure proc_2 is
+  begin
+    num1:= 30;
+    DBMS_OUTPUT.PUT_LINE('inside proc2');
+  end;
+end;
+
+begin
+  pkg1.proc_1();
+  DBMS_OUTPUT.PUT_LINE(pkg1.num1); --20
+end;  
+
+
+begin
+      DBMS_OUTPUT.PUT_LINE(pkg1.num1); --10
+end;      
+
+If serially reusable is removed then the value 20 will be retained. If I open a new window(new session) then it will show 10.
+You can mark a bodiless package as serially reusable. If a package has a spec and body, you must mark both. You cannot mark only the body.
+
+The global memory for serially reusable packages is pooled in the System Global Area (SGA), not allocated to individual users in the User Global Area (UGA). That way, the package work area can be reused. When the call to the server ends, the memory is returned to the pool. Each time the package is reused, its public variables are initialized to their default values or to NULL.
+
+Disadvantages of Package - More memory may be required on the Oracle database server when using Oracle PL/SQL packages as the whole package is loaded into memory as soon as any object in the package is accessed.
+Disadvantages: Updating one of the functions/procedures will invalid other objects which use different functions/procedures since whole package is needed to be compiled.
+
+Controlling Side Effects of PL/SQL Subprograms
+----------------------------------------------
+
+To be callable from SQL statements, a stored function (and any subprograms called by that function) must obey certain "purity" rules, which are meant to control side effects:
+
+1. It should not read/write to database tables
+2. It should not read/write from packaged variables
+3. It should not execute TCL statements / DDL statements.
+
+PLS-00452: Subprogram 'GET_EMPLOYEE_NAME' violates its associated pragma
+
+If any SQL statement inside the function body violates a rule, you get an error at run time (when the statement is parsed).
+
+To check for violations of the rules, you can use the pragma (compiler directive) RESTRICT_REFERENCES. The pragma asserts that a function does not read or write database tables or package variables. For example, the following pragma asserts that packaged function credit_ok writes no database state (WNDS) and reads no package state (RNPS):
+
+CREATE PACKAGE loans AS
+   FUNCTION credit_ok RETURN BOOLEAN;
+   PRAGMA RESTRICT_REFERENCES (credit_ok, WNDS, RNPS);
+END loans;
+/
+
+The RESTRICT_REFERENCES pragma asserts that a user-defined subprogram does not read or write database tables or package variables. (Subprograms that read or write database tables or package variables are difficult to optimize, because any invocation of the subprogram might produce different results or encounter errors.) If a statement in a user-defined subprogram violates an assertion made by RESTRICT_REFERENCES, then the PL/SQL compiler issues an error message when it parses that statement, unless you specify TRUST.
+
+Typically, this pragma is specified for functions. If a function invokes procedures, then specify this pragma for those procedures also.
+This pragma can appear only in a package specification or ADT specification.
+
+A static INSERT, UPDATE, or DELETE statement always violates WNDS. It also violates RNDS (reads no database state) if it reads any columns. A dynamic INSERT, UPDATE, or DELETE statement always violates WNDS and RNDS.
+
+DEFAULT
+Specifies that the pragma applies to all subprograms in the package spec or object type spec. You can still declare the pragma for individual subprograms. Such pragmas override the default pragma.
+
+
+function_name -  A user-defined function or procedure.
+
+
+PRAGMA Signifies that the statement is a compiler directive. Pragmas are processed at compile time, not at run time. They do not affect the meaning of a program; they convey information to the compiler.
+
+RNDS - Asserts that the subprogram reads no database state (does not query database tables).
+
+RNPS - Asserts that the subprogram reads no package state (does not reference the values of packaged variables)
+
+TRUST - Asserts that the subprogram can be trusted not to violate one or more rules. This value is needed for functions written in C or Java that are called from PL/SQL, since PL/SQL cannot verify them at run time.
+
+WNDS - Asserts that the subprogram writes no database state (does not modify database tables).
+
+WNPS - Asserts that the subprogram writes no package state (does not change the values of packaged variables).
+
+Usage Notes
+
+You can declare the pragma RESTRICT_REFERENCES only in a package spec or object type spec. You can specify up to four constraints (RNDS, RNPS, WNDS, WNPS) in any order. To call a function from parallel queries, you must specify all four constraints. No constraint implies another.
+
+When you specify TRUST, the function body is not checked for violations of the constraints listed in the pragma. The function is trusted not to violate them. Skipping these checks can improve performance.
+
+If you specify DEFAULT instead of a subprogram name, the pragma applies to all subprograms in the package spec or object type spec (including the system-defined constructor for object types). You can still declare the pragma for individual subprograms, overriding the default pragma.
+
+A RESTRICT_REFERENCES pragma can apply to only one subprogram declaration. A pragma that references the name of overloaded subprograms always applies to the most recent subprogram declaration.
+
+Typically, you only specify this pragma for functions. If a function calls procedures, then you need to specify the pragma for those procedures as well.
+
+TRUST
+
+Asserts that the subprogram can be trusted not to violate the other specified assertions and prevents the PL/SQL compiler from checking the subprogram body for violations. Skipping these checks can improve performance.
+
+If your PL/SQL subprogram invokes a C or Java subprogram, then you must specify TRUST for either the PL/SQL subprogram or the C or Java subprogram, because the PL/SQL compiler cannot check a C or Java subprogram for violations at run time.
+
+2D array in oracle
+------------------
+declare
+type arr is record(name varchar2(100),age number);
+type t_tab is table of arr;
+tab1 t_tab := t_tab();
+begin
+  tab1.extend(2);
+  tab1(1).name := 'AA';
+  DBMS_OUTPUT.PUT_LINE('A'); 
+end;
+
+
+which is better procedure or package
+--------------
+Package is better than procedure. It supports encapsulation, code reusability, modular code.
+increase the namespace of procedure names as proc name can be same across different packages.
+support session variables when needed.
+It forms a cohesive unit
+data abstraction - hide the implementation details from user.
+Reduced Invalidation – Changing a package body does not invalidate dependencies as changing a function or procedure does
+Secure Private Methods
+
+NOCOPY HINT
+-----------
+Oracle has two methods of passing passing OUT and IN OUT parameters in PL/SQL code:
+
+Pass By Value : The default action is to create a temporary buffer (formal parameter), copy the data from the parameter variable (actual parameter) to that buffer and work on the temporary buffer during the lifetime of the procedure. On successful completion of the procedure, the contents of the temporary buffer are copied back into the parameter variable. In the event of an exception occurring, the copy back operation does not happen.
+
+Pass By Reference : Using the NOCOPY hint tells the compiler to use pass by reference, so no temporary buffer is needed and no copy forward and copy back operations happen. Instead, any modification to the parameter values are written directly to the parameter variable (actual parameter).
+
+Under normal circumstances you probably wouldn't notice the difference between the two methods, but once you start to pass large or complex data types (LOBs, XMLTYPEs, collections etc.) the difference between the two methods can be come quite considerable. The presence of the temporary buffer means pass by value requires twice the memory for every OUT and IN OUT parameter, which can be a problem when using large parameters. In addition, the time it takes to copy the data to the temporary buffer and back to the parameter variable can be quite considerable.
+
+NOCOPY works for OUT and INOUT mode parameters.
+
+procedure test_nocopy(num1 out nocopy number) is
+begin
+opt;
+end;
+
+NOCOPY is a hint. There are a number of circumstances where the compiler can ignore the hint, as described
+
+1. The actual parameter must be implicitly converted to the data type of the formal parameter.
+2. The actual parameter is the element of a collection.
+3. The actual parameter is a scalar variable with the NOT NULL constraint.
+4. The actual and formal parameters are records, one or both was declared with %ROWTYPE or %TYPE, and constraints on corresponding fields differ.
+
+
+BIND VARIABLE
+-------------
+Bind variables are used in SQL and PL/SQL statements for holding data or result sets. They are commonly used in SQL statements to optimize statement performance. A statement with a bind variable may be re-executed multiple times without needing to be re-parsed. Their values can be set and referenced in PL/SQL blocks. They can be referenced in SQL statements e.g. SELECT. Except in the VARIABLE and PRINT commands, bind variable references should be prefixed with a colon. It will do soft parse instead of hard parse.
+
+Cursor_sharing force - By default all literals will be converted to bind variables.
+Cursor_sharing exact - It is the default mode.
+
+create or replace procedure proc_1(name1 varchar2) as
+v_sql varchar2(32767);
+v_addr varchar2(1000);
+
+begin
+v_sql := 'select addr from vel_user where name := :1';
+execute immediate v_sql into v_addr using name1;
+dbms_output.put_line(v_addr);
+end;
+
+
+DETERMINISTIC FUNCTION
+----------------------
+It means that for the same input given to a function, the output will also be same. Oracle caches the values for faster response time.
+
+return number deterministic is
+
+How to return more than one value from a Function in PL/SQL
+
+create or replace type emp_type
+(
+first_name varchar2(20)
+, last_name varchar2(20)
+, depart_name varchar2(20)
+)
+/
+create or replace function get_employee
+(loc in number)
+return emp_type
+as 
+emp_record emp_type;
+begin
+select a.first_name, a.last_name, b.department_name into emp_record 
+from employees a, departments b 
+where a.department_id=b.department_id and location_id=loc;
+
+return(emp_record); 
+end;
+
+return(first_name,||’,’||last_name||’,’||depart_name);
+
+Explain two virtual tables available at the time of database trigger execution. - old and new.
+
+Is it possible to commit/Rollback inside a Function. - Yes if u dont want to call from sql. also cant write any query.Cant perform a dml operation inside a query.
+
+call one package inside another - Yes
+
+how to update complex view - using instead of triggers
+
+package cursor from another procedure
+create or replace package pkg1 as
+  cursor c1 return test11%rowtype is select num1,num2 from test11;
+num1 number := 30;
+procedure proc_1;
+procedure proc_2;
+
+end;
+
+
+create or replace procedure test_21 is
+
+begin  
+open pkg1.c1;
+  
+end;
+
+if the cursor is declared in spec then it can be opened from another package/procedure.
+
+spec:
+  cursor c1 return test11%rowtype;
+
+body:
+    cursor c1 return test11%rowtype is select num1,num2 from test11;
+It has to be defined globally in the body
+
+sysdate in check constraints - not allowed
+
+can u alter proc within package - - not allowed
