@@ -1,0 +1,161 @@
+ceo sms
+
+RCHG, USAGE(MOU), Revenue,activation,churn
+OG_HOME
+OG_ROAM
+IC
+
+
+
+ETOP_RCHG
+PAPER_RCHG
+ALL_RCHG
+TOT_MOU_REV - OG_MOU, TOT_REV,Unique OG Users
+CALL_TYPE = 52 AND SUBSTR(CELL_ID,1,5) IN (''40430'',''40457'') 
+Sum of call_duration is OG_MOU
+Sum of call_charges is OG_REV
+
+HOME_MOU
+ROAM_MOU
+IN_CALL_TYPE = 53 then ROAM
+
+SMS_CNT
+FCC
+GPRS_REV
+
+KOL REVENUE IN-LAKHS
+VOICE(CORE+ISD)=101.82
+OUTROAMER(OG+IC+SMS)=21.27
+VOICE TOTAL REV=122.86
+HOME SMS=2.41
+DEBIT=16.69
+GPRS=5.89
+TOTAL=148.07
+
+DATA is provided for FTD,MTD,LMTD.
+
+DATA_3GRCHG - AMT,REV
+DATA_3GMRP_SMS - Each MRP how many recharges for d-1.
+
+IN DECREMENT SMS is sum of all revenue.
+
+RCHG COUNT SMS
+VOICE,DATA,TT
+
+AT MIG ACTIVITIES
+DB-Links Cheks
+Temp TableSpace Checks
+Report/Procs execution from Back End
+CEO SMS Execution from Back End
+Ireporting
+Table access
+Table count
+
+SLA :
+1.UPSS Highlights and Lowlights
+2.Report hits for last month
+3.UPSS SLA - CEO SMS SLA,SR SLA(with 3 slabs),CDR SLA,Summary of 3 sheets in 3 columns.
+4.Ticket Dump with analysis for S3 ( with 5 columns) - Analysis	Permanent Resolution	Classification- External system issue/UUI
+5.Ticket Dump with SLAB for Mar month - circle wise within SLA and outside SLA
+6.S3 and SR analysis ( Categerization breakup) - ceo sms addition,configuration request,uui,report data issue
+7.Active User count for the month of Mar
+8.Exempted Dump for the month of Mar - reason for exempted tickets - late assignment,external system issue,UUI
+9.Report purged count for last month
+10.QRF Tracker
+11.CEO SMS Tracker
+
+
+ALERTS:
+1. FAILED_PROC ALERT
+2. LONG_RUNNING_REPORTS ALERT
+3. NOT_EXECUTED_PROCEDURE ALERT
+4. LONG RUNNING SESSIONS ON ODS (IVR, SPOC)
+5. ODS PROD COUNT MISMATCH ALERT
+6. TABLE ANALYZED ALERT
+
+
+
+FAILED_PROC ALERT
+1. It checks if it is 12 am. If it is 12am then it truncates the table proc_status. 
+2. In a cursor it puts all the failed procs from PL. 
+3. For each of the failed procs, it checks whether there is entry in proc_status. 
+4. If entry is not there, then it inserts the failed proc. 
+5. If entry is there, then it will increment count_check in proc_status by 1. 
+6. Then it will update the start_date and end_date in proc_status.
+It is scheduled every hour. Also checked during handover.
+
+LONG_RUNNING_REPORTS ALERT
+1. Insert into LONG_RUNNING_REPORTS_TAB from LONG_RUNNING_REPORTS where run_hr >6.
+2. In a cursor, it puts all entried from vel_current.
+3. It finds difference between start_time in vel_current and sysdate.
+4. If it is >5 then it inserts in LONG_RUNNING_REPORTS.
+It is scheduled every hour. Also checked during handover.
+
+NOT_EXECUTED_PROCEDURE ALERT
+1. Truncate the table LAST_EXEC_PRC_ZONE1.
+2. In a cursor put all the procs for sysdate-1 from PL.
+3. Insert into LAST_EXEC_PRC_ZONE1, the process name and the difference between start time and sysdate.
+4. Insert into MIS_NOT_EXEC_PRC_TAB from LAST_EXEC_PRC_ZONE1 where diff>24.
+It is scheduled every hour. Also checked during handover.
+
+ODS PROD COUNT MISMATCH ALERT
+1. ZONE1_TABLE contains list of table name of cm_subscriber and circle_id.
+2. In a cursor put all the table names for all circles
+3. For each circle check the count in prod and ods.
+4. Find the difference between both.
+5. If diff > 5000 then sms is sent.
+It is scheduled every 2 hours. Also checked during handover.
+
+LONG RUNNING SESSIONS ON ODS (IVR, SPOC)
+1. Create a table from V$Session and V$SQL where sysdate - logon time > 120
+2. Send alert for all the records.
+It is scheduled at 7am.
+
+BASE TABLE ANALYZE
+1.All the base tables are put in a table.
+2.Run the cursor and analyze each table.
+
+TABLESPACE ALERT
+1.Check the total tablespace used for each schema in user_segments
+2.Subtract from zone_seg_size
+3.If less than 100 GB then send sms.
+
+
+When creating a report:
+WO Number,Date,Description,Author
+Comments before each block
+Put it in vel_report_config - is_input_file required 0/1
+in_params_display_name - separated by |
+field_names - separated by | - this is the variable name in procedure
+out_table_name - from where it has to be spooled
+delimit - xls
+
+After execution it searches for out table. If not present then failure notification comes with the error.
+
+Important reports
+PRE-D05-MSISDN_DET_UPSS
+
+
+indexes
+execute immediate
+reports
+Dev Team details
+Query hints
+Pivot Insert
+critical issues
+
+archival_admin
+Indaug_16
+
+
+RFC - 
+Date/ Time, No Downtime
+
+Summary
+Pre-implementation plan, implementation plan,verficiation plan,impact of change failure
+Application name and ip
+attach the Wo and impact sheet
+impact sheet contains appl owner name,downtime,etc
+then share the artifacts to close the rfc
+
+clustering

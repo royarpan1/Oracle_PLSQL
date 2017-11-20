@@ -1,0 +1,111 @@
+I am working as PLSQL developer in TCS. Our client is Vodafone India. I am working in MIS Team. I have completed OCE certification. 
+
+CEO SMS - It is delivered to vodafone higher mgmt and it contains the revenue, recharges and other details for d-1 and we give the trend - FTD,MTD,LMTD. 
+MOU,REV,Recharges
+
+Ireporting
+Push based reports in unix server
+
+Procedures
+packages
+
+Base procedures - dblink and subscriber based tables are replicated
+performance tuning
+
+We work on work orders and demands for new report/sms development or changes.
+First we check the feasibility and then we give the implementation date. Every thursday and friday we have RFC except last week of the month.  There is new report implementation and also existing report modification, change in logic. We identify the reports by execution time and take up 2 reports every week
+
+SLA and alerts
+
+What changes were made last week - 
+Pre-D04 Recharge New - implemented for 10 circles
+
+
+Challenging task:
+DB Links, Flex
+
+Critical issues
+RAJ new sms
+KOL new report
+Tuning of CHN circle ceo sms.
+change in logic for bucket balance
+
+
+There are 4 dumps - RCHG,CDR,SUBS,OFFER
+Subs based tables - cm-subs, addr,profile,segment
+promo based - promo appl map, promo_subs_appl_map, promo_subscriber_map
+
+------------------------------------------
+
+oracle architecture
+abt the project
+revise
+
+Components of db:
+Storage
+Memory
+Processes
+
+Datafiles
+Control files
+Online redo logs
+
+Datafiles - Tables, indexes, undo segments, temporary files
+dba_data_files - datafiles mappped to tablespace
+
+COntrol files - 3 ctrl files - db name, creation date, pathname of all datafile, ckpt info of each datafile
+v$control_file - pathname of ctrl file
+
+v$ - dynamic performance files
+
+redo logs - changes to data stored here.
+In archivelog mode, when redo logs get filled, the data gets stored in archived redo logs. In nonarchive log mode, it is overwritten
+
+spfile - server parameter file
+init file - 
+password file -  created using orapwd files
+
+Memory - SGA(shared global area)
+database buffer cache - oracle datablock inside it.
+DIRT type of files in oracle
+
+DB_CACHE_SIZE, DB_BLOCK_SIZE - each one is 8k
+
+LRU algorithm is applied to database buffer cache and shared pool
+
+
+SGA - database buffer cache, 
+shared pool - library cache,dictionary cache,
+java pool 
+large pool
+
+
+library cache - actual text of sql statements and the compiled versions(metacode) and exec plan
+v$sql - shows the shared pool
+U can flush the database buffer cache and library cache
+
+dictionary cache - contains the name of the objects
+
+shared_pool_size present in spfile
+
+java objects stored in java pool
+
+large pool used for RMAN
+
+
+DBWR - writes from db buffer cache to datafiles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

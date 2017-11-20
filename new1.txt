@@ -1,0 +1,321 @@
+Sleep well before interview or rather on any day otherwise mind is choked.
+Sit in a quiet place with a notepad and earphones and give interview. Not on road with traffic noise or garage.
+Keep the mind open when giving interview.
+Take melatonin pills and go to sleep.
+Be prepared for any type of interview even if they say just HR.
+Always prepare the reason for quitting the jobs u have quitted before.
+
+
+When oracle database is installed two admin accounts are created 
+SYS and SYSTEM
+It has a single varchar2(1) column called Dummy and value is X. It exists in the schema SYS. It is used for our convenience as it has only one row.
+cannot create trigger on objects owned by SYS
+before select on - invalid trigger type
+
+oracle maintains transactions at block level not at sql level. So can't see the queries in the uncommitted transactions but can check the count in 
+select count(1) from v$transactions;
+
+ORA 54 - resource busy no wait specified
+There are uncommitted transactions and you try to drop that table.
+
+Uncommitted trans won't be seen from other window or from other session.
+
+If there is a count in v$trans then there is a session. Each window it considers as one session.
+
+every 3 sec or commit whichever is faster for redo log buffer to redo log files.
+if the size of the trans is more than redo log buffer then DBWR will write som
+ dirty buffers to data files so that the redo log buffer can be re-used.
+
+if I close the session the uncommitted transactions get committed.
+
+select seq1.currval from dual; before nextval it will throw an error.
+Sequences retain value across sessions. It will always retain the value.
+
+If u try to insert into same table inside trigger then it will become recursive.
+max recursive levels is 50
+
+in varchar2 column order by 10 comes after 1.
+need to write declare if giving pragma in trigger.
+Any subprogram can be opened in program window.
+
+Can compile a prama autonomous trigger without commit/rollback but throws error during the DML;
+
+If there is a bodiless package and there is a proc in it it will get compiled.
+For a simple package, in the same session or same window, the values get retained. From a new session, a new copy is created.
+it will give error if pragma serially reusable given only in body or only in spec.
+Inside one begin/end, it will retain the value in case of pragma serially_reusable.
+
+Enable novalidate means the existing rows won't be checked but the new rows will be validated.
+deferrable should be used otherwise.
+
+how to add a not null column to a table
+isnt savepoint against the ACID properties.
+alter table scott.emp add new_col int default 1 not null;
+
+using savepoints the statement level atomiticy is being maintained.
+an autonomous transaction can start another autonomous transaction.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cursor open -> DDL -> Drop the table
+
+
+
+To Do
+-----
+Partition Exchange
+Index becoming slow
+pipeline function
+interval partitioning
+
+Done
+----
+redo log flushed every 3 seconds
+Semantic error
+How insert works at architecture level
+Upper case and lower case - Bind variables
+unique constraint foreign key - possible
+Constraints - composite ones, unique constraint foreign key,
+HWM - block level or segment level
+unique constraint - 
+10,null
+10,null - not possible
+foreign key -> composite pk in other table - foreign key should also be composite.
+Function overloading char and varchar2 - allowed.
+function inside function - In Declare section.
+
+create table tab1(n1 number,n2 number, unique(n1,n2));
+insert into tab1(10,null);
+insert into tab1(10,null);
+select * from tab1;
+
+declare
+a number;
+begin
+select n1 into a1 from tab1;
+
+exception
+when too_namy_rows then
+dbms_output.put_line('hello');
+when others then
+dbms_output.put_line('hello others');
+end;
+
+
+
+
+drop table tab1;
+create table tab2(n1 number,n2 number, primary key(n1,n2));
+create table tab1(n3 number,n4 number,foreign key(n4) references tab2(n1,n2));
+
+
+insert into tab1(10,null);
+insert into tab1(10,null);
+select * from tab1;
+
+create or replace package pkg1 as
+procedure p1(n1 number,n2 number);
+procedure p1(n1 number,n2 number);
+end;
+
+
+   CREATE OR REPLACE PROCEDURE PROC1 IS
+          FUNCTION too_much RETURN NUMBER IS
+      BEGIN
+         RETURN 10;
+      END;
+
+      FUNCTION too_little RETURN NUMBER IS
+      BEGIN
+         RETURN 20;
+      END;
+ BEGIN
+
+DBMS_OUTPUT.PUT_LINE(TOO_MUCH());
+   END;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(PROC1.TOO_MUCH);
+END;
+
+
+create table tab1(n1 number,n2 number);
+insert into tab1(10,20);
+insert into tab1(10,30);
+
+declare
+cursor c1 is select n1 from 
+
+drop table tab1;
+
+create or replace trigger tri_1
+after update on tab1
+for each row
+declare
+pragma autonomous_transaction
+begin
+insert into tab2(10);
+end;
+
+
+
+
+INITRANS is a block level storage parameter which can be specified while creating a object (table). INITRANS and MAXTRANS parameters are used to control the concurrent access to the same block. There can be a maximum of 255 concurrent sessions that can access a block at any given time. So the maximum value for MAXTRANS parameter is 255. The value specified through INITRANS are taken into consideration for creating the initial number of ITLs (Intersted Transaction Entries) in the block.
+
+While creating the table if INITRANS 20 is specified, then 20 different ITL slots will be created in the block transaction variable header.
+
+BLOCK SIZE and INITRANS :
+
+Each and every ITL entry in the block transaction variable header takes 24 bytes. Though a block can have a maximum of 255 different ITLs , the block is quite limited to allocate only some defined ITLs in the header. The database block size plays a important role in allocating the number of inital ITLs for the blocks.
+The rule is “the total size allocated for initial ITLs SHOULD be LESS THAN 50% of the database block size”
+ie :  sizeof(INITIAL ITLs) <  ( 50 % of the DATABASE BLOCK SIZE )
+
+Each transaction updating a block requires ITL (Initial Transaction Slots)
+
+FREELIST is a structure that maintains list of free blocks.
+PCTFREE - the free space is used when the rows are updated. If it doesn't fit then it goes for row migration / chaining.
+Row migration - original block contains the address of the new block. FTS won't be affected but index scans will be affected.
+Chaining - one row is spread over many blocks.
+
+In Exchange partition, we need to drop the initial table.
+In DBMS_Redefinition, we need to the drop the final table.
+
+ALTER TABLE big_table2
+  EXCHANGE PARTITION big_table_2007
+  WITH TABLE big_table
+  WITHOUT VALIDATION
+  UPDATE GLOBAL INDEXES;
+
+
+dbms_redefinition.redef_table(a);
+
+Multitable insert
+-----------------
+You should not use sequences in multi-table insert statements.
+You cannot use a multi-table insert to write to a remote table.
+You can only use multi-table inserts with tables. Not views, materialized or otherwise.
+The sum of all the columns in the various insert-into clauses of a multi-table insert statement must not exceed 999.
+You cannot use a TABLE collection expression in a multi-table insert statement.
+
+Package can be bodiless but not specless.
+A proc defined in spec has to be defined in body also.
+Commit inside cursor loop will close the cursor.
+User defined Exception with same name as system defined.
+Pragma autonomous inside function to have a DML inside function that we want to call inline.
+Procedures and packages are stored in data dictionary in system tablespace.
+Restrict References
+Grant execute on single proc in a package.
+Joins in delete.
+Triggers in detail
+
+Only functions that are DETERMINISTIC are allowed in function-based indexes and in certain snapshots and materialized views.
+
+Convert bitmap index to btree index
+
+
+Multitable insert
+-----------------
+You should not use sequences in multi-table insert statements.
+You cannot use a multi-table insert to write to a remote table.
+You can only use multi-table inserts with tables. Not views, materialized or otherwise.
+The sum of all the columns in the various insert-into clauses of a multi-table insert statement must not exceed 999.
+You cannot use a TABLE collection expression in a multi-table insert statement.
+
+Package can be bodiless but not specless.
+A proc defined in spec has to be defined in body also.
+Commit inside cursor loop will close the cursor.
+User defined Exception with same name as system defined. - user defined will take precedence and system defined won't be handled.
+Procedures and packages are stored in data dictionary in system tablespace.
+translate
+ACID Properties
+partition a table already built - dbms_redefinition.start_redef_table(user,table1,table2);
+
+Pragma autonomous inside function to have a DML inside function that we want to call inline.
+ISOLATION LEVEL Clause
+Use the ISOLATION LEVEL clause to specify how transactions containing database modifications are handled.
+The SERIALIZABLE setting specifies serializable transaction isolation mode as defined in the SQL92 standard. If a serializable transaction contains data manipulation language (DML) that attempts to update any resource that may have been updated in a transaction uncommitted at the start of the serializable transaction, then the DML statement fails.
+The READ COMMITTED setting is the default Oracle Database transaction behavior. If the transaction contains DML that requires row locks held by another transaction, then the DML statement waits until the row locks are released.
+
+SET TRANSACTION ISOLATION LEVEL 
+
+Restrict References
+Joins in delete.
+
+Grant execute on single proc in a package.
+
+Triggers in detail
+
+
+
+Only functions that are DETERMINISTIC are allowed in function-based indexes and in certain snapshots and materialized views.
+
+Convert bitmap index to btree index
+
+ Q29. What is the maximum limit of applying Triggers to a Table?
+The maximum number of Triggers that can be applied to one table is 12.
+
+Q32. What is an Active Set?
+The set of rows that a Cursor holds at a single point of time is called as an Active Set.
+
+Q38. What are the disadvantages of Cursors and is there any alternative to it?
+The processing of Cursors is very slow as compared to Joins. Hence, Joins can be an alternative to Cursors.
+
+Q46. What is a Mutating Table Error and how can you solve it?
+It occurs if the Trigger tries to update a row that is currently being used. This is solved either by using the Temporary Tables or by the Views.
+
+bodiless package
+
+PARALLEL_ENABLE: Specifies if we can run the function parallelly
+
+DETERMINISTIC:
+
+AUTONOMOUS_TRANSACTION: Specifies if this function is an Autonous Transaction
+
+call proc_names
+
+5. How to drop a package?
+DROP PACKAGE package_name ? It drops both Body and specification
+DROP PACKAGE BODY package_name ? It drops only Body
+
+
+4)Can PRIMARY KEY IS A FOREIGN KEY ON THE same TABLE?    Ans ) Yes
+15)Can a function take OUT parameters.If not why. 
+
+23) can we use dynamic statements in triggers.
+ 
+24)  what happen when parent block have insert statement and commit,but child block has pragma autanamous transaction statement   followed by update statement on same table with commit ?
+25) two table are co-related( primary key constraint) is it posibale to insert a row in any of the table with out distrubing constraint?
+
+26) what is the use of pipline table fucntion?
+
+39)  how to rebuild index ? ( how when huge records in table) – using no logging
+
+4. Where are errors and other corruptions stored for easy access?
+The alert log.
+5. What’s inside a control file?
+A database’s physical components, including the database name, a time stamp of its creation, and the name and locations of its files.
+ALTER INDEX index_name REBUILD;
+
+26. What is the minimum and maximum amount of columns a table can have?
+Between 1 and 254.
+
+. What is cardinality?
+Thinking mathematically, it is the number of elements in a set. Thinking in the database world, cardinality has to do with the counts in a relationship, one-to-one, one-to-many, or many-to-many.'
+
+Level: Intermediate
+Expected answer: This happens with triggers. It occurs because the trigger is trying to update a row it is currently using. The usual fix involves either use of views or temporary tables so the database is selecting from one while updating the other. 
+

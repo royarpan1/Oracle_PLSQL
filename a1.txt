@@ -1,0 +1,17 @@
+Record Source ID
+Channel_ID
+
+chain status / hub status
+
+merchant_hub - hub_code
+merchant_chain - bank_code, chain_code. hub_code is fk
+
+merchant document verification - app_verification_list
+
+merchant_application, mer_checklist, app_merchant_setl_account, app_outlet_setl_account
+
+app_dedupe_conf
+dedupe_applications
+
+
+

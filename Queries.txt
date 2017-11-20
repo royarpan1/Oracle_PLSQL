@@ -1,0 +1,213 @@
+Schema
+
+employees -
+emp_id
+dept_id
+boss_id
+emp_name
+salary
+
+departments - 
+dept_id
+dept_name
+
+
+Questions
+List employees (names) who have a bigger salary than their boss
+List employees who have the biggest salary in their departments
+List departments that have less than 3 people in it
+List all departments along with the number of people there (tricky - people often do an "inner join" leaving out empty departments)
+List employees that don't have a boss in the same department
+List all departments along with the total salary there
+
+
+List employees (names) who have a bigger salary than their boss
+---------------------------------------------------------------
+select e.emp_name from employee e,employee m
+where e.boss_id = m.emp_id
+and e.sal>m.sal;
+
+
+List employees who have the biggest salary in their departments
+------------------------
+select e.emp_name,d.dept_name from  employee e,departments d
+where e.dept_id = d.dept_id
+and e.sal = (select(max) sal from employee e2
+where e.dept_id = e2.dept_id);
+
+select emp_name,sal from
+(select e.emp_name,e.dept_id,e.sal,dense_rank() over (partition by e.dept_id order by e.sal desc) rn
+from employee e)
+where rn  = 1;
+
+List departments that have less than 3 people in it
+------------------------
+select e.dept_id,d.dept_name,count(e.emp_id) from employee e,department d
+where e.dept_id=d.dept_id
+group by dept_id
+having count(e.emp_id) < 3;
+
+List all departments along with the number of people there
+------------------------
+select d.dept_id,count(e.emp_id) cnt from employee e,department d
+where e.dept_id(+)=d.dept_id
+group by d.dept_id;
+
+List employees that don't have a boss in the same department
+------------------------
+select e.emp_name from employee e,employee m
+where e.boss_id = m.emp_id
+and e.dept_id <> d.dept_id;
+
+List all departments along with the total salary there
+------------------------
+select e.dept_id,sum(nvl(e.sal,0))total_sal
+from employee e
+group by e.dept_id;
+
+remove duplicates
+---------------
+select emp_id,emp_name,count(1)
+from employee e 
+group by emp_id,emp_name
+having count(1)>1;
+
+delete from employee where rowid not in 
+(select max(rowid) from employee
+group by emp_id,emp_name);
+
+delete from employee e1 where rowid not in
+(select max(rowid) from employee e2
+where e1.emp_id = e2.emp_id
+and e1.emp_name = e2.emp_name);
+
+delete from employee e1 where rowid in 
+(select rowid from
+(select emp_id,rowid,row_number() over(partition by emp_id,emp_name order by rowid) rn
+from employee)
+where rn > 1);
+
+3rd highest sal
+---------------
+select emp_name,sal from
+(select emp_id,emp_name,sal, dense_rank() over (order by sal desc)rn
+from employee)
+where rn=3;
+
+3rd lowest sal
+---------------
+select emp_name,sal from
+(select emp_id,emp_name,sal, dense_rank() over (order by sal desc)rn
+from employee)
+where rn=3;
+
+
+emp
+---
+emp_id,name,
+
+List the employees who are not managers
+------------------------------
+select emp_name from emp a
+where emp_id not in (select mgr_id from emp);
+
+Manager with only one reportee
+---------------
+select mgr from (select e1.id as mgr ,e2.id as id from employee e1
+inner join employee e2 on
+e1.id=e2.manager)abc
+group by mgr having count(id)=1
+
+
+3. what is the month with most hiring?
+select dt from (select dt,rank() over(order by cnt desc) as rnk from (select to_char(doj,'mm') as dt ,count(*) as cnt from employee
+group by to_char(doj,'mm'))) where rnk=1;
+
+4.what is the experience gap between the first employee and the latest?
+select max(doj)-min(doj) from employee;
+
+5. name the manager with most reportees?
+select mgr from (select mgr,rank() over( order by cnt desc) as rnk from (select mgr,count(id) as cnt from (select e1.id as mgr,e2.id as id from employee e1
+inner join employee e2
+on e1.id=e2.manager)
+group by mgr)) where rnk=1
+
+6.list managers who joined after the reportees
+select mgr from (select e1.id as mgr,e2.id as id,e1.doj as mdoj, e2.doj as edoj from employee e1
+join employee e2 on
+e1.id=e2.manager)
+group by mgr
+having max(mdoj)>min(edoj)
+
+7.department with most managers and how many?
+select department,cnt from (select department,rank() over(order by cnt desc) as rnk,cnt from (select count(distinct manager) as cnt ,department from employee
+group by department)) where rnk=1
+:)
+
+RDBMS Concepts
+ER Diagram
+
+14.Display first 50% records from Employee table?
+Select rownum,E.* from Employee E
+minus
+Select rownum,E.* from Employee E where rownum<=(Select count(*/2) from Employee);
+
+18.How to get distinct records from the table without using distinct keyword.
+select * from Employee a where  rowid = (select max(rowid) from Employee b where  a.Employee_no=b.Employee_no);
+
+
+How To create partition on non partitioned Tables?
+
+Query to print employee name along with their manager name. If no manager(that employee at the top level of the organization. I guess its Steve in employees table )then print employee name, "no manager".
+Q.3. Can you get the list of employees with same salary?
+# Q. 2 Can you get employee details whose department id is not valid or department id not present in department table?
+Q.8. can you show 1 row twice in result from a table ?
+-- Yes. We can use union all or cross join to obtain this.
+select deptname from department d where d.deptname='it'
+union all
+select deptname from department d1 where d1.deptname='it'
+-- also cross join alias same table
+select d.deptname from department d, department d1
+where d.deptname='it'
+
+does count(1) include nulls;
+
+SELECT count(*) AS total FROM orders;
+
++-------+
+| total |
++-------+
+|  100  |
++-------+
+
+SELECT count(*) AS cust_123_total FROM orders WHERE customer_id = '123';
+
++----------------+
+| cust_123_total |
++----------------+
+|       15       |
++----------------+
+
+SELECT count(*) AS cust_not_123_total FROM orders WHERE customer_id <> '123'
+
+Surprisingly, given the sample data provided, the result of this query will be an empty set. The reason for this is as follows: If the set being evaluated by the SQL NOT IN condition contains any values that are null, then the outer query here will return an empty set, even if there are many runner ids that match winner_ids in the races table.
+
+check cardinality
+
+unique and pk on the same column - multiple constraints on same column
+play with not null
+
+invisible,identity, virtual columns
+maxtrans and inittrans
+
+views / instead of triggers
+partitioning details. - exhange partition / redefinition
+
+function - pragma restrict,deterministic
+materialized views
+GTT
+index scans
+UTL_FILE
+REF CURSOR
+trigger details
+bind variables in sql
